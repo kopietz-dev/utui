@@ -29,20 +29,12 @@ class TextField : public Element {
   Vector2 cursorPosition;
 
   void updateCursorPosition() {
-    if (cursorPosition.x > value[cursorPosition.y].length())
-      cursorPosition.x = value[cursorPosition.y].length();
-
-    shared.cursorBuffer +=
-        ANSI::setCursorColor(cursorColor) +
-        ANSI::setCursorPosition(absolutePosition() + cursorPosition -
-                                Vector2({0, scroll}));
+    shared.cursor.setPosition(absolutePosition() +
+                              Vector2({cursorPosition, 0}));
+    shared.cursor.setColor(cursorColor);
   }
-  void activate(const InputEvent& e) override {
-    shared.cursorBuffer += ANSI::showCursor();
-  }
-  void deactivate(const InputEvent& e) override {
-    shared.cursorBuffer += ANSI::hideCursor();
-  }
+  void activate(const InputEvent& e) override { shared.cursor.show(); }
+  void deactivate(const InputEvent& e) override { shared.cursor.hide(); }
 
   void handleLeftClick(const InputEvent& e) override {
     if (e.value != 'M') return;

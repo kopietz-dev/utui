@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ansi.h"
+#include "types.h"
 
 namespace UTUI {
 
@@ -14,6 +15,8 @@ struct Styles {
 class Element {
  public:
   Vector2 position;
+  bool relativePosition = false;
+
   Styles styles;
   bool disabled = false;
 
@@ -33,27 +36,34 @@ class Element {
     shared.mainBuffer +=
         ANSI::clearArea(styles.bgColor, absolutePosition(), size);
   }
-  void pushEvent(unsigned int type) { shared.events.push_back({id, type}); }
   bool isActive() { return active; }
   void setID(unsigned int newID) { id = newID; };
   unsigned int getID() { return id; }
-  const Vector2 absolutePosition() { return (position + parentPosition); }
+  const Vector2 absolutePosition() {
+    if (relativePosition)
+      return {(int)((float)position.x / 100.0f * (float)parentSize.x),
+              (int)((float)position.y / 100.0f * (float)parentSize.y)};
+    else
+      return (position + parentPosition);
+  }
   const Vector2 getSize() { return size; }
   virtual ~Element() = default;
 
  protected:
   SharedValues& shared;
-  Vector2& parentPosition;
-  Color& parentBgColor;
+  const Vector2 &parentPosition, &parentSize;
+  const Color& parentBgColor;
   bool active = false, hovered = false;
   unsigned int id;
   Vector2 size;
   bool sRemove = false;
 
-  Element(SharedValues& shared, Vector2& parentPosition, Color& parentBgColor,
+  Element(SharedValues& shared, const Vector2& parentPosition,
+          const Vector2& parentSize, const Color& parentBgColor,
           unsigned int id)
       : shared(shared),
         parentPosition(parentPosition),
+        parentSize(parentSize),
         parentBgColor(parentBgColor),
         id(id){};
 
@@ -76,6 +86,7 @@ class Element {
 
   virtual void draw() {}
 
+  void pushEvent(unsigned int type) { shared.events.push_back({id, type}); }
   bool handleInputEvent(const InputEvent& e) {
     if (disabled || (e.type < 90 && !Utils::isInBoundaries(absolutePosition(),
                                                            size, e.position)))

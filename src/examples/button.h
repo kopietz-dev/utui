@@ -6,9 +6,8 @@ class Button : public Element {
  public:
   void setText(const std::string& v) {
     text = v;
-    clear();
+    refresh();
     size.x = Utils::getStringWidth(v);
-    draw();
   }
   std::string getText() { return text; }
   bool isHovered() { return hover; }

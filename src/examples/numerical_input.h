@@ -1,12 +1,14 @@
+#include <string>
+
 #include "../element.h"
 
 namespace UTUI {
 
-class TextInput : public Element {
+class NumericalInput : public Element {
  public:
   Color cursorColor, placeholderColor;
   std::string placeholder;
-  bool coded = false;
+  bool coded = false, floatingPoint = true;
 
   void setSize(int newSize) { size.x = newSize; }
   void clearValue() {
@@ -61,10 +63,14 @@ class TextInput : public Element {
         break;
       default:
         if (value.length() < size.x - 1) {
-          value.insert(value.begin() + cursorPosition, 1, (char)e.value);
-          cursorPosition++;
+          if ((e.value >= 48 && e.value <= 57) ||
+              (floatingPoint && e.value == 46 &&
+               value.find('.') == std::string::npos)) {
+            value.insert(value.begin() + cursorPosition, 1, (char)e.value);
+            cursorPosition++;
 
-          pushEvent(Event::VALUE_CHANGE);
+            pushEvent(Event::VALUE_CHANGE);
+          }
         }
         break;
     }

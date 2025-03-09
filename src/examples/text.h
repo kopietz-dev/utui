@@ -9,6 +9,8 @@ class Text : public Element {
   void setLine(const std::string& v, int index) {
     value[index] = v;
     refresh();
+    const int stringWidth = Utils::getStringWidth(v);
+    if (size.x < stringWidth) size.x = stringWidth;
   }
   void addLine(const std::string& v, int index) {
     const int stringWidth = Utils::getStringWidth(v);

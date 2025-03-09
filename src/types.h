@@ -15,9 +15,6 @@
 #include "events.h"
 
 namespace UTUI {
-class UTUI;
-class Window;
-
 enum class InputEventType {
   NO_EVENT = -1,
   MOUSE_LEFT_CLICK = 0,
@@ -74,9 +71,27 @@ struct Color {
 
   Color operator!() const { return {255 - r, 255 - g, 255 - b}; }
 };
+struct Cursor {
+ public:
+  void setColor(const Color& v) {
+    color = v;
+    updated.set();
+  }
+  void setPosition(const Vector2& v) { position = v; }
+  void show() { visible = true; }
+  void hide() { visible = false; }
+
+ private:
+  Vector2 position = {1, 1};
+  Color color = {255, 255, 255};
+  bool visible = false;
+  Flag updated;
+
+  friend class Main;
+};
 struct SharedValues {
   std::string mainBuffer;
-  std::string cursorBuffer;
+  Cursor cursor;
   Vector2 screenSize;
   Color bgColor;
   std::vector<Event> events;

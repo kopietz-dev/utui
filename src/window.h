@@ -15,7 +15,7 @@ class Window {
   T& append(unsigned int id = 0) {
     static_assert(std::is_base_of<Element, T>::value,
                   "T must be a class derived from UTUI::Element");
-    elements.push_back(new T(shared, position, styles.bgColor, id));
+    elements.push_back(new T(shared, position, size, styles.bgColor, id));
 
     return *dynamic_cast<T*>(elements.back());
   }
@@ -28,6 +28,14 @@ class Window {
       }
     }
     return matching;
+  }
+  Element* getElementById(unsigned int id) {
+    for (Element* element : elements) {
+      if (element->getID() == id) {
+        return element;
+      }
+    }
+    return nullptr;
   }
 
   void clear() {

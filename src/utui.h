@@ -1,4 +1,5 @@
 #pragma once
+#include "ansi.h"
 #include "window.h"
 
 namespace UTUI {
@@ -7,7 +8,7 @@ class Main {
  public:
   static inline const unsigned int GLOBAL_ID = 0;
 
-  static const Vector2 getScreenSize() { return shared.screenSize; }
+  static const Vector2& getScreenSize() { return shared.screenSize; }
   static InputEvent getInputEvent() { return event; }
   static bool hasScreenSizeChanged() { return screenSizeChanged.get(); }
   static void displayAll() {
@@ -39,12 +40,19 @@ class Main {
         }
       }
     }
-    // Buffers flushing
-    if (shared.cursorBuffer.size() > 0) {
-      shared.mainBuffer += shared.cursorBuffer;
-      shared.cursorBuffer.clear();
+
+    const int mainBufferSize = shared.mainBuffer.size();
+
+    // Displaying cursor
+    if (mainBufferSize > 0 || shared.cursor.updated.get()) {
+      shared.mainBuffer +=
+          (shared.cursor.visible ? ANSI::showCursor() : ANSI::hideCursor()) +
+          ANSI::setCursorColor(shared.cursor.color) +
+          ANSI::setCursorPosition(shared.cursor.position);
     }
-    if (shared.mainBuffer.size() > 0) {
+
+    // Buffer flushing
+    if (mainBufferSize > 0) {
       write(1, shared.mainBuffer.c_str(), shared.mainBuffer.size());
       shared.mainBuffer.clear();
     }
@@ -67,6 +75,13 @@ class Main {
                       matching.end());
     }
     return matching;
+  }
+  static Element* getElementById(unsigned int id) {
+    for (Window* window : windows) {
+      Element* matching = window->getElementById(id);
+      if (matching != nullptr) return matching;
+    }
+    return nullptr;
   }
   static void hideCursor() { shared.mainBuffer += ANSI::hideCursor(); }
   static void showCursor() { shared.mainBuffer += ANSI::showCursor(); }
@@ -111,6 +126,7 @@ class Main {
   static void updateInputEvent() {
     char buf[16];
     std::memset(buf, '\a', 16);
+    getchar();  // todo check
     int bytesRead = read(STDIN_FILENO, buf, sizeof(buf));
 
     if (buf[0] == '\033') {
