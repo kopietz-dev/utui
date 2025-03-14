@@ -1,5 +1,20 @@
 #pragma once
-#include "ansi.h"
+#include <iostream>
+
+#include "elements/button.h"
+#include "elements/click_menu.h"
+#include "elements/menu.h"
+#include "elements/progress_bar.h"
+#include "elements/scrollable_menu.h"
+#include "elements/scrollable_text.h"
+#include "elements/switch.h"
+#include "elements/tabbar.h"
+#include "elements/text.h"
+#include "elements/text_field.h"
+#include "elements/text_input.h"
+#include "parser.h"
+#include "screen.h"
+#include "utils.h"
 #include "window.h"
 
 namespace UTUI {
@@ -8,18 +23,15 @@ class Main {
  public:
   static inline const unsigned int GLOBAL_ID = 0;
 
-  static const Vector2& getScreenSize() { return shared.screenSize; }
+  static const Vector2& getScreenSize() { return consoleScreen->size; }
   static InputEvent getInputEvent() { return event; }
-  static bool hasScreenSizeChanged() { return screenSizeChanged.get(); }
   static void displayAll() {
     for (Window* window : windows) {
-      window->refresh();
+      if (!window->disabled) window->refresh();
     }
   }
-  static std::vector<Event>& getEvents() { return shared.events; }
   static void update() {
     // Poll user input
-    shared.events.clear();
     updateInputEvent();
 
     if (event.type != InputEventType::NO_EVENT) {
@@ -61,11 +73,19 @@ class Main {
     tcgetattr(STDIN_FILENO, &oldTerm);
     write(1, "\033[?1003l\033[?1006l\033[?25h\033[H\033[J", 28);
   }
-  static Window& append(unsigned int id) {
-    Window* newWindow = new Window(shared, id);
+  static Window& append(unsigned int id = 0) {
+    Window* newWindow = new Window(shared, consoleScreen, nullptr, id);
+
     newWindow->size = {3, 3};
     windows.push_back(newWindow);
     return *windows.back();
+  }
+  static Window* getWindowById(unsigned int id) {
+    for (Window* window : windows) {
+      if (window->getID() == id) return window;
+    }
+
+    return nullptr;
   }
   static std::vector<Element*> getElementsById(unsigned int id) {
     std::vector<Element*> matching;
@@ -76,10 +96,13 @@ class Main {
     }
     return matching;
   }
-  static Element* getElementById(unsigned int id) {
+  template <typename T>
+  static T* getElementById(unsigned int id) {
+    static_assert(std::is_base_of<Element, T>::value,
+                  "T must be a class derived from UTUI::Element");
     for (Window* window : windows) {
-      Element* matching = window->getElementById(id);
-      if (matching != nullptr) return matching;
+      Element* matching = window->getElementById<T>(id);
+      if (matching != nullptr) return dynamic_cast<T*>(matching);
     }
     return nullptr;
   }
@@ -87,8 +110,9 @@ class Main {
   static void showCursor() { shared.mainBuffer += ANSI::showCursor(); }
   static void disableScroll() { shared.mainBuffer += ANSI::disableScroll(); }
   static void setBgColor(const Color& color) {
-    shared.bgColor = color;
-    shared.mainBuffer += ANSI::setBgColor(shared.bgColor);
+    consoleScreen->styles.standard.bgColor = color;
+    shared.mainBuffer +=
+        ANSI::setBgColor(consoleScreen->styles.standard.bgColor);
     clearScreen();
   }
   static void clearScreen() { shared.mainBuffer += ANSI::clearScreen(); }
@@ -106,6 +130,8 @@ class Main {
 
     shared.mainBuffer += "\033[?1003h\033[?1006h";
 
+    consoleScreen->position = {1, 1};
+
     handleResizeSignal(0);
 
     std::signal(SIGINT, Main::handleCloseSignal);
@@ -116,17 +142,132 @@ class Main {
     clearScreen();
   }
 
+  static void setColorProperty(
+      const std::unordered_map<std::string, std::string>& params,
+      const std::string& key, Color& property) {
+    auto it = params.find(key);
+    if (it != params.end()) {
+      if (it->second[0] == '$') {
+        auto var = variables.find(it->second);
+
+        if (var != variables.end())
+          property = Utils::stringToColor(var->second);
+        else {
+          Utils::throwError("Variable \"" + it->second +
+                            "\" does not exist!\n");
+        }
+      } else {
+        property = Utils::stringToColor(it->second);
+      }
+    }
+  }
+  static void setVector2Property(
+      const std::unordered_map<std::string, std::string>& params,
+      const std::string& key, Vector2& property) {
+    auto it = params.find(key);
+    if (it != params.end()) {
+      property = Utils::stringToVector2(it->second);
+    }
+  }
+
+  static void appendFromFile(const std::string& filename) {
+    std::vector<std::unordered_map<std::string, std::string>> elementParams =
+        parser.appendFromFile(filename);
+
+    Window* winPointer = nullptr;
+    Element* elemPointer = nullptr;
+
+    for (const std::unordered_map<std::string, std::string>& params :
+         elementParams) {
+      elemPointer = nullptr;
+
+      const std::string& type = params.find("type")->second;
+
+      if (type[0] == '$') {
+        variables[type] = params.find("value")->second;
+      }
+      if (type[0] == '@') {
+        appendFromFile(type.substr(1));
+      }
+
+      if (type == "#window") {
+        winPointer = &append();
+        elemPointer = winPointer;
+      }
+      if (type == "#button") elemPointer = &winPointer->append<Button>();
+      if (type == "#scrollable_text")
+        elemPointer = &winPointer->append<ScrollableText>();
+      if (type == "#scrollable_menu")
+        elemPointer = &winPointer->append<ScrollableMenu>();
+      if (type == "#text_input") elemPointer = &winPointer->append<TextInput>();
+      if (type == "#text") elemPointer = &winPointer->append<Text>();
+      if (type == "#click_menu") elemPointer = &winPointer->append<ClickMenu>();
+      if (type == "#progress_bar")
+        elemPointer = &winPointer->append<ProgressBar>();
+      if (type == "#tabbar") elemPointer = &winPointer->append<Tabbar>();
+      if (type == "#text_field") elemPointer = &winPointer->append<TextField>();
+      if (type == "#switch") elemPointer = &winPointer->append<Switch>();
+      if (type == "#menu") elemPointer = &winPointer->append<Menu>();
+
+      if (elemPointer != nullptr) {
+        setColorProperty(params, "fgColor",
+                         elemPointer->styles.standard.fgColor);
+        setColorProperty(params, "bgColor",
+                         elemPointer->styles.standard.bgColor);
+        setColorProperty(params, "hover.fgColor",
+                         elemPointer->styles.hover.fgColor);
+        setColorProperty(params, "hover.bgColor",
+                         elemPointer->styles.hover.bgColor);
+
+        setColorProperty(params, "selected.fgColor",
+                         elemPointer->styles.selected.fgColor);
+        setColorProperty(params, "selected.bgColor",
+                         elemPointer->styles.selected.bgColor);
+
+        setVector2Property(params, "relativeOffset",
+                           elemPointer->relativeOffset);
+        setVector2Property(params, "position", elemPointer->position);
+        setVector2Property(params, "size", elemPointer->size);
+
+        if (auto it = params.find("id"); it != params.end())
+          elemPointer->setID(std::stoi(it->second));
+
+        if (auto it = params.find("value"); it != params.end()) {
+          if (it->second[0] == '$') {
+            elemPointer->initFromString(variables.find(it->second)->second,
+                                        true);
+          } else {
+            elemPointer->initFromString(it->second, false);
+          }
+        }
+      }
+    }
+
+    if (auto it = variables.find("$global.bgColor"); it != variables.end()) {
+      setBgColor(Utils::stringToColor(it->second));
+    }
+  }
+
+  static void onResize(const std::function<void()>& v) {
+    resizeListener.set(v);
+  }
+  static void onExit(const std::function<void()>& v) { exitListener.set(v); }
+
  private:
   static inline SharedValues shared;
   static inline std::vector<Window*> windows;
-  static inline Flag screenSizeChanged;
   static inline InputEvent event;
   static inline struct termios oldTerm;
+  static inline EventListener resizeListener, exitListener;
+  static inline Parser parser;
+
+  static inline Screen* consoleScreen = new Screen(shared, nullptr, nullptr, 0);
+
+  static inline std::unordered_map<std::string, std::string> variables;
 
   static void updateInputEvent() {
     char buf[16];
     std::memset(buf, '\a', 16);
-    getchar();  // todo check
     int bytesRead = read(STDIN_FILENO, buf, sizeof(buf));
 
     if (buf[0] == '\033') {
@@ -155,14 +296,19 @@ class Main {
     }
   }
   static void handleCloseSignal(int signal) {
-    shared.events.push_back({0, Event::EXIT_SIGNAL});
+    exitListener.trigger();
+
+    UTUI::Main::close();
+
+    exit(0);
   }
   static void handleResizeSignal(int signal) {
     struct winsize win_size;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &win_size);
 
-    shared.screenSize = {win_size.ws_col, win_size.ws_row};
-    shared.events.push_back({0, Event::SCREEN_RESIZE});
+    consoleScreen->size = {win_size.ws_col, win_size.ws_row};
+
+    resizeListener.trigger();
   }
 };
 }  // namespace UTUI

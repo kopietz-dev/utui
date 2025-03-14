@@ -1,19 +1,3 @@
-# utui
-Lightweight and Flexible C++ TUI library
-
-## Table of Contents
-
-- [Description](#description)
-- [Usage](#usage)
-
-## Description
-
-UTUI provides a simple and flexible way to create interactive, text based user interfaces in the terminal.
-
-## Usage
-Example code
-
-```cpp
 #include "../src/utui.h"
 
 int main() {

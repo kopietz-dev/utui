@@ -8,8 +8,13 @@ class Range : public Element {
 
   void setSize(const Vector2& newSize) { size = newSize; }
 
+  void onChange(const std::function<void()>& v) { changeListener.set(v); }
+
+  void onGrab(const std::function<void()>& v) { grabListener.set(v); }
+
  private:
   bool isDragged = false;
+  EventListener changeListener, grabListener;
 
   void handleLeftClick(const InputEvent& e) override {
     const Vector2 absPos = absolutePosition();
@@ -18,7 +23,7 @@ class Range : public Element {
                 e.value == 'M';
 
     if (isDragged) {
-      pushEvent(Event::ACTIVATED);
+      grabListener.trigger();
     }
   }
   void handleLeftDrag(const InputEvent& e) override {
@@ -30,18 +35,20 @@ class Range : public Element {
         std::clamp(e.position.x - absolutePosition().x, 0, size.x - 1);
 
     if (value != newValue) {
-      pushEvent(Event::VALUE_CHANGE);
+      changeListener.trigger();
 
       value = newValue;
       draw();
     }
   }
   void draw() override {
-    shared.mainBuffer += ANSI::setFgColor(styles.fgColor) +
-                         ANSI::setBgColor(styles.bgColor) +
+    shared.mainBuffer += ANSI::setColor(styles.standard) +
                          ANSI::setCursorPosition(absolutePosition()) +
                          Utils::multiplyString("\u2500", value) + "\u25CF" +
                          Utils::multiplyString("\u2500", size.x - value - 1);
+  }
+  void initFromString(const std::string& v, bool alias) override {
+    value = std::stoi(v);
   }
   using Element::Element;
 };

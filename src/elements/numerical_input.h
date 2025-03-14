@@ -8,7 +8,7 @@ class NumericalInput : public Element {
  public:
   Color cursorColor, placeholderColor;
   std::string placeholder;
-  bool coded = false, floatingPoint = true;
+  bool coded = false, floatingPoint = true, negativeNumbers = false;
 
   void setSize(int newSize) { size.x = newSize; }
   void clearValue() {
@@ -24,10 +24,14 @@ class NumericalInput : public Element {
     }
   }
 
+  void onChange(const std::function<void()>& v) { changeListener.set(v); }
+  void onSubmit(const std::function<void()>& v) { submitListener.set(v); }
+
  private:
   std::string value;
   int cursorPosition = 0;
 
+  EventListener changeListener, submitListener;
   void updateCursorPosition() {
     shared.cursor.setPosition(absolutePosition() +
                               Vector2({cursorPosition, 0}));
@@ -45,32 +49,41 @@ class NumericalInput : public Element {
       cursorPosition = value.length();
     }
 
-    pushEvent(Event::ACTIVATED);
     updateCursorPosition();
   }
+  void pushCharacter(char v) {
+    value.insert(value.begin() + cursorPosition, 1, v);
+    cursorPosition++;
+
+    changeListener.trigger();
+  }
   void handleAlfanumKey(const InputEvent& e) override {
+    const int spaceLeft = size.x - value.size() - 1;
     switch ((char)e.value) {
       case 127:
         if (cursorPosition > 0) {
           cursorPosition--;
           value.erase(value.begin() + cursorPosition);
-
-          pushEvent(Event::VALUE_CHANGE);
+          changeListener.trigger();
         }
         break;
       case '\n':
-        pushEvent(Event::SUBMIT);
+        submitListener.trigger();
+        break;
+      case '-':
+        if (value.empty()) {
+          pushCharacter(e.value);
+        }
+        break;
+      case '.':
+        if (spaceLeft > 0 && floatingPoint &&
+            value.find('.') == std::string::npos) {
+          pushCharacter(e.value);
+        }
         break;
       default:
-        if (value.length() < size.x - 1) {
-          if ((e.value >= 48 && e.value <= 57) ||
-              (floatingPoint && e.value == 46 &&
-               value.find('.') == std::string::npos)) {
-            value.insert(value.begin() + cursorPosition, 1, (char)e.value);
-            cursorPosition++;
-
-            pushEvent(Event::VALUE_CHANGE);
-          }
+        if (spaceLeft > 0 && e.value >= 48 && e.value <= 57) {
+          pushCharacter(e.value);
         }
         break;
     }
@@ -98,15 +111,15 @@ class NumericalInput : public Element {
     clear();
     if (value.empty()) {
       shared.mainBuffer += ANSI::setFgColor(placeholderColor) +
-                           ANSI::setBgColor(styles.bgColor) +
+                           ANSI::setBgColor(styles.standard.bgColor) +
                            ANSI::setCursorPosition(absolutePosition()) +
                            placeholder;
     } else {
-      shared.mainBuffer +=
-          ANSI::setCursorPosition(absolutePosition()) +
-          ANSI::setFgColor(styles.fgColor) + ANSI::setBgColor(styles.bgColor) +
-          (coded ? std::string(value.length(), '*') : value) +
-          ANSI::cursorDown() + ANSI::cursorLeft(value.length());
+      shared.mainBuffer += ANSI::setCursorPosition(absolutePosition()) +
+                           ANSI::setColor(styles.selected) +
+                           (coded ? std::string(value.length(), '*') : value) +
+                           ANSI::cursorDown() +
+                           ANSI::cursorLeft(value.length());
     }
 
     updateCursorPosition();

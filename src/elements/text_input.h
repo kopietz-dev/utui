@@ -1,3 +1,5 @@
+#include <string>
+
 #include "../element.h"
 
 namespace UTUI {
@@ -11,6 +13,7 @@ class TextInput : public Element {
   void setSize(int newSize) { size.x = newSize; }
   void clearValue() {
     value.clear();
+    cursorPosition = 0;
     refresh();
   }
   std::string getValue() { return value; }
@@ -21,10 +24,31 @@ class TextInput : public Element {
       refresh();
     }
   }
+  void onChange(const std::function<void()>& v) { changeListener.set(v); }
+  void onSubmit(const std::function<void()>& v) { submitListener.set(v); }
+
+  void draw() override {
+    if (value.empty()) {
+      shared.mainBuffer +=
+          ANSI::setFgColor(placeholderColor) +
+          ANSI::setBgColor(styles.standard.bgColor) +
+          ANSI::setCursorPosition(absolutePosition()) + placeholder +
+          Utils::multiplyString(" ", size.x - placeholder.size());
+    } else {
+      shared.mainBuffer += ANSI::setCursorPosition(absolutePosition()) +
+                           ANSI::setColor(styles.standard) +
+                           (coded ? std::string(value.length(), '*') : value) +
+                           Utils::multiplyString(" ", size.x - value.length());
+    }
+
+    updateCursorPosition();
+  }
 
  private:
   std::string value;
   int cursorPosition = 0;
+
+  EventListener changeListener, submitListener;
 
   void updateCursorPosition() {
     shared.cursor.setPosition(absolutePosition() +
@@ -43,7 +67,6 @@ class TextInput : public Element {
       cursorPosition = value.length();
     }
 
-    pushEvent(Event::ACTIVATED);
     updateCursorPosition();
   }
   void handleAlfanumKey(const InputEvent& e) override {
@@ -53,18 +76,19 @@ class TextInput : public Element {
           cursorPosition--;
           value.erase(value.begin() + cursorPosition);
 
-          pushEvent(Event::VALUE_CHANGE);
+          changeListener.trigger();
         }
         break;
       case '\n':
-        pushEvent(Event::SUBMIT);
+        submitListener.trigger();
         break;
       default:
         if (value.length() < size.x - 1) {
           value.insert(value.begin() + cursorPosition, 1, (char)e.value);
+
           cursorPosition++;
 
-          pushEvent(Event::VALUE_CHANGE);
+          changeListener.trigger();
         }
         break;
     }
@@ -87,25 +111,9 @@ class TextInput : public Element {
 
     updateCursorPosition();
   }
-
-  void draw() override {
-    clear();
-    if (value.empty()) {
-      shared.mainBuffer += ANSI::setFgColor(placeholderColor) +
-                           ANSI::setBgColor(styles.bgColor) +
-                           ANSI::setCursorPosition(absolutePosition()) +
-                           placeholder;
-    } else {
-      shared.mainBuffer +=
-          ANSI::setCursorPosition(absolutePosition()) +
-          ANSI::setFgColor(styles.fgColor) + ANSI::setBgColor(styles.bgColor) +
-          (coded ? std::string(value.length(), '*') : value) +
-          ANSI::cursorDown() + ANSI::cursorLeft(value.length());
-    }
-
-    updateCursorPosition();
+  void initFromString(const std::string& v, bool alias) override {
+    placeholder = v;
   }
-
   using Element::Element;
 };
 

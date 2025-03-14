@@ -27,12 +27,14 @@ class ScrollableMenu : public Element {
   void addOption(const std::string& v) { addOption(v, getOptionsSize()); }
   void deleteOption(int index) { value.erase(value.begin() + index); }
 
+  void onChange(const std::function<void()>& v) { changeListener.set(v); }
+
  private:
   std::vector<std::string> value;
   int selected = -1, hovered = -1;
   int scroll = 0;
   bool isScrolled = false;
-
+  EventListener changeListener;
   void handleLeftDrag(const InputEvent& e) override {
     if (!isScrolled) return;
 
@@ -81,7 +83,7 @@ class ScrollableMenu : public Element {
     const Vector2 relativePosition = e.position - absolutePosition();
     if (relativePosition.x < size.x - 2) {
       selected = relativePosition.y + scroll;
-      pushEvent(Event::SELECTION_CHANGED);
+      changeListener.trigger();
       refresh();
     }
   }
@@ -103,39 +105,36 @@ class ScrollableMenu : public Element {
                                 ((float)value.size() - size.y)))};
 
     shared.mainBuffer +=
-        ANSI::setFgColor(styles.fgColor) +
+        ANSI::setFgColor(styles.standard.bgColor) +
         ANSI::setCursorPosition(absolutePosition() + scrollPosition) + "\u2588";
   }
+
   void draw() override {
-    shared.mainBuffer += ANSI::setFgColor(styles.fgColor) +
-                         ANSI::setBgColor(styles.bgColor) +
+    shared.mainBuffer += ANSI::setColor(styles.standard) +
                          ANSI::setCursorPosition(absolutePosition());
     for (int i = 0; i < size.y; i++) {
       if (i + scroll >= value.size() || i + scroll < 0) return;
 
       std::string& line = value[i + scroll];
 
-      if (selected == i + scroll)
-        shared.mainBuffer += ANSI::setFgColor((hovered == i + scroll)
-                                                  ? styles.fgColorSelectedHover
-                                                  : styles.fgColorSelected) +
-                             ANSI::setBgColor((hovered == i + scroll)
-                                                  ? styles.bgColorSelectedHover
-                                                  : styles.bgColorSelected) +
+      ColorPair pair = (i + scroll == selected)
+                           ? (styles.selected)
+                           : (i == hovered ? styles.hover : styles.standard);
 
-                             line + ANSI::cursorDown() +
-                             ANSI::cursorLeft(line.length());
-      else
-        shared.mainBuffer +=
-            ANSI::setFgColor((hovered == i + scroll) ? styles.fgColorHover
-                                                     : styles.fgColor) +
-            ANSI::setBgColor((hovered == i + scroll) ? styles.bgColorHover
-                                                     : styles.bgColor) +
-
-            line + ANSI::cursorDown() + ANSI::cursorLeft(line.length());
+      shared.mainBuffer += ANSI::setColor(pair) + line + ANSI::cursorDown() +
+                           ANSI::cursorLeft(line.length());
     }
 
     displayScroll();
+  }
+  void initFromString(const std::string& v, bool alias) override {
+    const std::vector<std::string> newLines =
+        Utils::splitString(v, alias ? '\n' : ',');
+    value.insert(value.end(), newLines.begin(), newLines.end());
+
+    for (const std::string& line : newLines) {
+      if (line.length() + 2 > size.x) size.x = Utils::getStringWidth(line) + 2;
+    }
   }
 
   using Element::Element;

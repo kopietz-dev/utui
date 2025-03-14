@@ -1,3 +1,6 @@
+#include <functional>
+#include <string>
+
 #include "../element.h"
 
 namespace UTUI {
@@ -6,24 +9,30 @@ class ClickMenu : public Element {
  public:
   std::vector<std::string> options;
 
-  int getSelected() { return value; }
+  int getSelected() { return selected; }
   void setSelected(int index) {
     if (index >= 0 && index < options.size()) {
-      value = index;
+      selected = index;
     }
     refresh();
   }
+  void onChange(const std::function<void()>& v) { changeListener.set(v); }
 
  private:
-  int value = 0;
+  int selected = 0;
   bool hovered = false;
+
+  EventListener changeListener;
 
   void handleLeftClick(const InputEvent& e) override {
     if (Utils::isInBoundaries(absolutePosition(), size, e.position) &&
         e.value == 'M') {
-      value++;
-      if (value >= options.size()) value = 0;
-      pushEvent(Event::SELECTION_CHANGED);
+      selected++;
+
+      if (selected >= options.size()) {
+        selected = 0;
+      }
+      changeListener.trigger();
     }
 
     refresh();
@@ -37,15 +46,17 @@ class ClickMenu : public Element {
     draw();
   }
   void draw() override {
-    const std::string displayedText = options[value];
+    const std::string displayedText = options[selected];
     size = {Utils::getStringWidth(displayedText), 1};
 
     shared.mainBuffer +=
-        ANSI::setFgColor(hovered ? styles.fgColorHover : styles.fgColor) +
-        ANSI::setBgColor(hovered ? styles.bgColorHover : styles.bgColor) +
+        ANSI::setColor(hovered ? styles.hover : styles.standard) +
         ANSI::setCursorPosition(absolutePosition()) + displayedText;
   }
-
+  void initFromString(const std::string& v, bool alias) override {
+    const std::vector<std::string> newOptions = Utils::splitString(v, ',');
+    options.insert(options.end(), newOptions.begin(), newOptions.end());
+  }
   using Element::Element;
 };
 

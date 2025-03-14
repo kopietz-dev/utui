@@ -1,11 +1,4 @@
-# Ignore todofiles
 .todo
-
-# Ignore log files
 *.log
 
-# Ignore build
-main
-
-#Ignore testing files
-main.cpp
+build/

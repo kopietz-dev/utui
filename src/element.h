@@ -1,71 +1,96 @@
 #pragma once
 
+#include <cmath>
+#include <string>
+#include <vector>
+
 #include "ansi.h"
+#include "event_listener.h"
 #include "types.h"
+#include "utils.h"
 
 namespace UTUI {
 
 struct Styles {
-  Color fgColor = {255, 255, 255}, bgColor = {0, 0, 0}, fgColorHover = bgColor,
-        bgColorHover = fgColor, fgColorSelected = fgColor,
-        bgColorSelected = bgColor, fgColorSelectedHover = fgColorHover,
-        bgColorSelectedHover = bgColorHover;
+  ColorPair standard;
+  ColorPair hover;
+  ColorPair selected;
 };
 
 class Element {
  public:
-  Vector2 position;
-  bool relativePosition = false;
-
   Styles styles;
   bool disabled = false;
 
   void remove() {
     disabled = true;
+    if (sRemoveFlag != nullptr) {
+      sRemoveFlag->set();
+    }
     sRemove = true;
   }
-  void refresh() {
-    cleanup();
+  void clear() {
+    shared.mainBuffer += ANSI::clearArea(parent->styles.standard.bgColor,
+                                         absolutePosition(), size);
+  }
+  void disable() {
+    disabled = true;
+    clear();
+  }
+  void enable() {
+    disabled = false;
     draw();
   }
-  void cleanup() {
-    shared.mainBuffer +=
-        ANSI::clearArea(parentBgColor, absolutePosition(), size);
+
+  void setPosition(const Vector2& v) {
+    clear();
+    position = v;
+    draw();
   }
-  void clear() {
-    shared.mainBuffer +=
-        ANSI::clearArea(styles.bgColor, absolutePosition(), size);
+  void refresh() {
+    clear();
+    draw();
   }
-  bool isActive() { return active; }
+  void updateStyles() { refresh(); }
+  void setRelativeOffset(const Vector2& v) {
+    clear();
+    position = v;
+    draw();
+  }
   void setID(unsigned int newID) { id = newID; };
-  unsigned int getID() { return id; }
-  const Vector2 absolutePosition() {
-    if (relativePosition)
-      return {(int)((float)position.x / 100.0f * (float)parentSize.x),
-              (int)((float)position.y / 100.0f * (float)parentSize.y)};
-    else
-      return (position + parentPosition);
+  Vector2 absolutePosition() const {
+    return position +
+           ((parent != nullptr)
+                ? parent->absolutePosition() +
+                      Vector2(
+                          {(int)std::round((float)relativeOffset.x / 100.0f *
+                                           (float)(parent->size.x - 1)),
+                           (int)std::round((float)relativeOffset.y / 100.0f *
+                                           (float)(parent->size.y - 1))})
+                : Vector2());
   }
-  const Vector2 getSize() { return size; }
+
+  unsigned int getID() const { return id; }
+  Vector2 getSize() const { return size; }
+  Vector2 getPosition() const { return position; }
+  Vector2 getRelativeOffset() const { return relativeOffset; }
+  bool isActive() const { return active; }
+
   virtual ~Element() = default;
 
  protected:
   SharedValues& shared;
-  const Vector2 &parentPosition, &parentSize;
-  const Color& parentBgColor;
+  const Element* parent;
+  Flag* sRemoveFlag;
   bool active = false, hovered = false;
   unsigned int id;
-  Vector2 size;
+  Vector2 size = {1, 1};
   bool sRemove = false;
+  Vector2 position, relativeOffset;
 
-  Element(SharedValues& shared, const Vector2& parentPosition,
-          const Vector2& parentSize, const Color& parentBgColor,
+  Element(SharedValues& shared, const Element* parent, Flag* sRemoveFlag,
           unsigned int id)
-      : shared(shared),
-        parentPosition(parentPosition),
-        parentSize(parentSize),
-        parentBgColor(parentBgColor),
-        id(id){};
+      : shared(shared), parent(parent), sRemoveFlag(sRemoveFlag), id(id){};
 
   virtual void startedHover(const InputEvent& e) {}
   virtual void stoppedHover(const InputEvent& e) {}
@@ -86,7 +111,8 @@ class Element {
 
   virtual void draw() {}
 
-  void pushEvent(unsigned int type) { shared.events.push_back({id, type}); }
+  virtual void initFromString(const std::string& v, bool alias) {}
+
   bool handleInputEvent(const InputEvent& e) {
     if (disabled || (e.type < 90 && !Utils::isInBoundaries(absolutePosition(),
                                                            size, e.position)))
@@ -120,7 +146,6 @@ class Element {
     }
     return true;
   }
-
   friend class Window;
   friend class Main;
 };

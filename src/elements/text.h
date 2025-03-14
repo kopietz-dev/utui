@@ -42,8 +42,7 @@ class Text : public Element {
   std::vector<std::string> value;
   void draw() override {
     size.y = value.size();
-    shared.mainBuffer += ANSI::setFgColor(styles.fgColor) +
-                         ANSI::setBgColor(styles.bgColor) +
+    shared.mainBuffer += ANSI::setColor(styles.standard) +
                          ANSI::setCursorPosition(absolutePosition());
 
     for (const std::string& line : value) {
@@ -51,7 +50,10 @@ class Text : public Element {
           line + ANSI::cursorDown() + ANSI::cursorLeft(line.length());
     }
   }
-
+  void initFromString(const std::string& v, bool alias) override {
+    const std::vector<std::string> newOptions = Utils::splitString(v, ',');
+    value.insert(value.end(), newOptions.begin(), newOptions.end());
+  }
   using Element::Element;
 };
 }  // namespace UTUI

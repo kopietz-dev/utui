@@ -12,8 +12,6 @@
 #include <string>
 #include <vector>
 
-#include "events.h"
-
 namespace UTUI {
 enum class InputEventType {
   NO_EVENT = -1,
@@ -45,7 +43,7 @@ class Flag {
   bool value = false;
 };
 struct Vector2 {
-  int x = 1, y = 1;
+  int x = 0, y = 0;
 
   Vector2 operator+(const Vector2& v) const { return {x + v.x, y + v.y}; }
   Vector2 operator-(const Vector2& v) const { return {x - v.x, y - v.y}; }
@@ -71,6 +69,9 @@ struct Color {
 
   Color operator!() const { return {255 - r, 255 - g, 255 - b}; }
 };
+struct ColorPair {
+  Color fgColor = {255, 255, 255}, bgColor = {0, 0, 0};
+};
 struct Cursor {
  public:
   void setColor(const Color& v) {
@@ -92,9 +93,6 @@ struct Cursor {
 struct SharedValues {
   std::string mainBuffer;
   Cursor cursor;
-  Vector2 screenSize;
-  Color bgColor;
-  std::vector<Event> events;
 };
 bool operator==(int l, InputEventType r) { return l == static_cast<int>(r); }
 bool operator==(InputEventType l, int r) { return r == l; }

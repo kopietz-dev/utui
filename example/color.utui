@@ -1,0 +1,7 @@
+$text.main={255,255,255};
+$text.secondary={170,170,180};
+$accent={124,184,249};
+$base.main={50,50,70};
+$base.secondary={80,80,100};
+$base.var={65,65,80};
+$global.bgColor={50,50,70};

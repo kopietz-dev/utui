@@ -43,8 +43,7 @@ class Counter : public Element {
                   strValue.length() + 4),
             1};
     shared.mainBuffer += ANSI::setCursorPosition(absolutePosition()) +
-                         ANSI::setFgColor(styles.fgColor) +
-                         ANSI::setBgColor(styles.bgColor) + decrementText +
+                         ANSI::setColor(styles.standard) + decrementText +
                          +"  " + std::to_string(value) + "  " + incrementText;
   }
 

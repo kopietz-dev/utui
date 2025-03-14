@@ -23,14 +23,44 @@ class TextField : public Element {
     }
   }
 
+  void onChange(const std::function<void()>& v) { changeListener.set(v); }
+
+  void draw() override {
+    if (value.size() < size.y) {
+      value.resize(size.y);
+    }
+    clear();
+    if (scroll == 0 &&
+        std::all_of(value.begin(), value.end(),
+                    [](const std::string& s) { return s.empty(); })) {
+      shared.mainBuffer += ANSI::setFgColor(placeholderColor) +
+                           ANSI::setBgColor(styles.standard.bgColor) +
+                           ANSI::setCursorPosition(absolutePosition()) +
+                           placeholder;
+      return;
+    }
+
+    shared.mainBuffer += ANSI::setCursorPosition(absolutePosition()) +
+                         ANSI::setColor(styles.standard);
+
+    for (int i = 0; i < size.y; i++) {
+      if (i + scroll >= value.size()) return;
+
+      const std::string& line = value[i + scroll];
+
+      shared.mainBuffer +=
+          line + ANSI::cursorDown() + ANSI::cursorLeft(line.length());
+    }
+  }
+
  private:
   std::vector<std::string> value;
   int scroll = 0;
   Vector2 cursorPosition;
+  EventListener changeListener;
 
   void updateCursorPosition() {
-    shared.cursor.setPosition(absolutePosition() +
-                              Vector2({cursorPosition, 0}));
+    shared.cursor.setPosition(absolutePosition() + cursorPosition);
     shared.cursor.setColor(cursorColor);
   }
   void activate(const InputEvent& e) override { shared.cursor.show(); }
@@ -94,7 +124,7 @@ class TextField : public Element {
         newLine();
         break;
     }
-    pushEvent(Event::VALUE_CHANGE);
+    changeListener.trigger();
 
     draw();
     updateCursorPosition();
@@ -136,34 +166,8 @@ class TextField : public Element {
 
     updateCursorPosition();
   }
-
-  void draw() override {
-    if (value.size() < size.y) {
-      value.resize(size.y);
-    }
-    clear();
-    if (scroll == 0 &&
-        std::all_of(value.begin(), value.end(),
-                    [](const std::string& s) { return s.empty(); })) {
-      shared.mainBuffer += ANSI::setFgColor(placeholderColor) +
-                           ANSI::setBgColor(styles.bgColor) +
-                           ANSI::setCursorPosition(absolutePosition()) +
-                           placeholder;
-      return;
-    }
-
-    shared.mainBuffer += ANSI::setCursorPosition(absolutePosition()) +
-                         ANSI::setFgColor(styles.fgColor) +
-                         ANSI::setBgColor(styles.bgColor);
-
-    for (int i = 0; i < size.y; i++) {
-      if (i + scroll >= value.size()) return;
-
-      const std::string& line = value[i + scroll];
-
-      shared.mainBuffer +=
-          line + ANSI::cursorDown() + ANSI::cursorLeft(line.length());
-    }
+  void initFromString(const std::string& v, bool alias) override {
+    placeholder = v;
   }
   using Element::Element;
 };

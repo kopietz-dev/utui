@@ -1,4 +1,5 @@
 #pragma once
+#include "types.h"
 #include "utils.h"
 
 namespace UTUI {
@@ -10,7 +11,7 @@ class ANSI {
     return std::string(buffer);
   }
   static std::string setFgColor(const Color& color) {
-    char buffer[bufferSize];
+    char buffer[20];
     std::snprintf(buffer, bufferSize, "\033[38;2;%d;%d;%dm", color.r, color.g,
                   color.b);
     return std::string(buffer);
@@ -21,13 +22,22 @@ class ANSI {
                   color.b);
     return std::string(buffer);
   }
+  static std::string setColor(const ColorPair& pair) {
+    char buffer[bufferSize * 2];
+    std::snprintf(buffer, bufferSize * 2,
+                  "\033[38;2;%d;%d;%dm\033[48;2;%d;%d;%dm", pair.fgColor.r,
+                  pair.fgColor.g, pair.fgColor.b, pair.bgColor.r,
+                  pair.bgColor.g, pair.bgColor.b);
+    return std::string(buffer);
+  }
+
   static std::string showCursor() { return "\033[?25h"; }
   static std::string hideCursor() { return "\033[?25l"; }
   static std::string disableScroll() { return "\033[?1049h"; }
   static std::string clearScreen() { return "\033[H\033[J"; }
   static std::string setCursorColor(const Color& color) {
-    char buffer[bufferSize];
-    std::snprintf(buffer, bufferSize, "\033]12;#%02X%02X%02X\a", color.r,
+    char buffer[bufferSize * 2];
+    std::snprintf(buffer, bufferSize * 2, "\033]12;#%02X%02X%02X\a", color.r,
                   color.g, color.b);
     return std::string(buffer);
   }
