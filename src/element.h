@@ -114,8 +114,9 @@ class Element {
   virtual void initFromString(const std::string& v, bool alias) {}
 
   bool handleInputEvent(const InputEvent& e) {
-    if (disabled || (e.type < 90 && !Utils::isInBoundaries(absolutePosition(),
-                                                           size, e.position)))
+    if (disabled ||
+        ((e.type < 90 && e.type != InputEventType::MOUSE_DRAG_LEFT) &&
+         !Utils::isInBoundaries(absolutePosition(), size, e.position)))
       return false;
 
     switch ((InputEventType)e.type) {

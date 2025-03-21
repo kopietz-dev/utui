@@ -93,7 +93,9 @@ class Window : public Element {
       }
     }
 
-    if (activeElement != -1 && (e.type >= 90 || e.type == 0)) {
+    if (activeElement != -1 &&
+        (e.type >= 90 || e.type == InputEventType::MOUSE_DRAG_LEFT ||
+         e.type == InputEventType::MOUSE_LEFT_CLICK)) {
       if (elements[activeElement]->handleInputEvent(e)) {
         return true;
       } else {
