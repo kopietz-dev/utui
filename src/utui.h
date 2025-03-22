@@ -76,7 +76,6 @@ class Main {
   static Window& append(unsigned int id = 0) {
     Window* newWindow = new Window(shared, consoleScreen, nullptr, id);
 
-    newWindow->size = {3, 3};
     windows.push_back(newWindow);
     return *windows.back();
   }
@@ -224,10 +223,11 @@ class Main {
         setColorProperty(params, "selected.bgColor",
                          elemPointer->styles.selected.bgColor);
 
-        setVector2Property(params, "relativeOffset",
-                           elemPointer->relativeOffset);
+        setVector2Property(params, "relativePosition",
+                           elemPointer->relativePosition);
         setVector2Property(params, "position", elemPointer->position);
         setVector2Property(params, "size", elemPointer->size);
+        setVector2Property(params, "relativeSize", elemPointer->relativeSize);
 
         if (auto it = params.find("id"); it != params.end())
           elemPointer->setID(std::stoi(it->second));
@@ -307,6 +307,10 @@ class Main {
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &win_size);
 
     consoleScreen->size = {win_size.ws_col, win_size.ws_row};
+
+    for (Window* window : windows) {
+      window->handleResize();
+    }
 
     resizeListener.trigger();
   }

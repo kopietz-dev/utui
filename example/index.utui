@@ -4,7 +4,8 @@ $sample_text=@sample.txt;
 
 #window
   id={42}
-  size={135,31}
+  size={0,0}
+  relativeSize={100,100}
   bgColor={$base.main};
 #text_input
   size={25,1}

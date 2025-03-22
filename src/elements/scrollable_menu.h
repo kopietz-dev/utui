@@ -12,14 +12,14 @@ class ScrollableMenu : public Element {
   void setSize(int newSize) { size.y = newSize; }
 
   void setScroll(int newScroll) {
-    scroll = std::clamp(newScroll, 0, (int)(value.size() - size.y));
+    scroll = std::clamp(newScroll, 0, (int)(value.size() - absoluteSize().y));
   }
   int getScroll() const { return scroll; }
 
   int getOptionsSize() { return value.size(); }
   void addOption(const std::string& v, int index) {
     const int stringWidth = Utils::getStringWidth(v);
-    if (size.x < stringWidth + 2) size.x = stringWidth + 2;
+    if (absoluteSize().x < stringWidth + 2) size.x = stringWidth + 2;
 
     if (index <= selected && selected != -1) selected++;
     value.insert(value.begin() + index, v);
@@ -38,12 +38,13 @@ class ScrollableMenu : public Element {
   void handleLeftDrag(const InputEvent& e) override {
     if (!isScrolled) return;
 
-    const Vector2 eventRelativePosition = e.position - absolutePosition();
+    const Vector2 eventRelativePosition = e.position - absolutePosition(),
+                  absSize = absoluteSize();
 
     scroll = std::clamp(
-        (int)round(((value.size() - size.y) * eventRelativePosition.y) /
-                   (float)(size.y - 1)),
-        0, (int)value.size() - size.y);
+        (int)round(((value.size() - absSize.y) * eventRelativePosition.y) /
+                   (float)(absSize.y - 1)),
+        0, (int)value.size() - absSize.y);
 
     refresh();
   }
@@ -55,14 +56,14 @@ class ScrollableMenu : public Element {
     }
   }
   void handleScrollDown(const InputEvent& e) override {
-    if (value.size() > size.y + scroll) {
+    if (value.size() > absoluteSize().y + scroll) {
       scroll++;
       refresh();
     }
   }
   void handleMouseMove(const InputEvent& e) override {
     const Vector2 relativePosition = e.position - absolutePosition();
-    if (relativePosition.x < size.x - 2) {
+    if (relativePosition.x < absoluteSize().x - 2) {
       int index = relativePosition.y + scroll;
 
       hovered = index;
@@ -73,15 +74,16 @@ class ScrollableMenu : public Element {
     }
   }
   void handleLeftClick(const InputEvent& e) override {
+    Vector2 absSize = absoluteSize();
     Vector2 scrollPosition = {
-        size.x - 1, (int)round(((float)(size.y - 1) * (float)(scroll) /
-                                ((float)value.size() - size.y)))};
+        absSize.x - 1, (int)round(((float)(absSize.y - 1) * (float)(scroll) /
+                                   ((float)value.size() - absSize.y)))};
 
     isScrolled =
         (scrollPosition + absolutePosition() == e.position) && e.value == 'M';
 
     const Vector2 relativePosition = e.position - absolutePosition();
-    if (relativePosition.x < size.x - 2) {
+    if (relativePosition.x < absSize.x - 2) {
       selected = relativePosition.y + scroll;
       changeListener.trigger();
       refresh();
@@ -100,9 +102,11 @@ class ScrollableMenu : public Element {
     }
   }
   void displayScroll() {
+    Vector2 absSize = absoluteSize();
+
     Vector2 scrollPosition = {
-        size.x - 1, (int)round(((float)(size.y - 1) * (float)(scroll) /
-                                ((float)value.size() - size.y)))};
+        absSize.x - 1, (int)round(((float)(absSize.y - 1) * (float)(scroll) /
+                                   ((float)value.size() - absSize.y)))};
 
     shared.mainBuffer +=
         ANSI::setFgColor(styles.standard.bgColor) +
@@ -112,7 +116,7 @@ class ScrollableMenu : public Element {
   void draw() override {
     shared.mainBuffer += ANSI::setColor(styles.standard) +
                          ANSI::setCursorPosition(absolutePosition());
-    for (int i = 0; i < size.y; i++) {
+    for (int i = 0; i < absoluteSize().y; i++) {
       if (i + scroll >= value.size() || i + scroll < 0) return;
 
       std::string& line = value[i + scroll];
@@ -133,7 +137,8 @@ class ScrollableMenu : public Element {
     value.insert(value.end(), newLines.begin(), newLines.end());
 
     for (const std::string& line : newLines) {
-      if (line.length() + 2 > size.x) size.x = Utils::getStringWidth(line) + 2;
+      if (line.length() + 2 > absoluteSize().x)
+        size.x = Utils::getStringWidth(line) + 2;
     }
   }
 

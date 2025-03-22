@@ -25,8 +25,7 @@ class ClickMenu : public Element {
   EventListener changeListener;
 
   void handleLeftClick(const InputEvent& e) override {
-    if (Utils::isInBoundaries(absolutePosition(), size, e.position) &&
-        e.value == 'M') {
+    if (e.value == 'M') {
       selected++;
 
       if (selected >= options.size()) {
@@ -47,8 +46,8 @@ class ClickMenu : public Element {
   }
   void draw() override {
     const std::string displayedText = options[selected];
-    size = {Utils::getStringWidth(displayedText), 1};
-
+    size.x = Utils::getStringWidth(displayedText);
+    size.y = 1;
     shared.mainBuffer +=
         ANSI::setColor(hovered ? styles.hover : styles.standard) +
         ANSI::setCursorPosition(absolutePosition()) + displayedText;
