@@ -18,7 +18,7 @@ class ScrollableText : public Element {
     std::string line;
     while (std::getline(file, line)) {
       const int stringWidth = Utils::getStringWidth(line);
-      if (size.x < stringWidth + 2) size.x = stringWidth + 2;
+      if (absoluteSize().x < stringWidth + 2) size.x = stringWidth + 2;
       value.push_back(line);
     }
     file.close();
@@ -27,7 +27,7 @@ class ScrollableText : public Element {
   void setSize(int newSize) { size.y = newSize; }
 
   void setScroll(int newScroll) {
-    scroll = std::clamp(newScroll, 0, (int)(value.size() - size.y));
+    scroll = std::clamp(newScroll, 0, (int)(value.size() - absoluteSize().y));
   }
   int getScroll() const { return scroll; }
 
@@ -37,9 +37,11 @@ class ScrollableText : public Element {
   std::vector<std::string> value;
 
   void handleLeftClick(const InputEvent& e) override {
+    const Vector2 absSize = absoluteSize();
+
     Vector2 scrollPosition = {
-        size.x - 1, (int)round(((float)(size.y - 1) * (float)(scroll) /
-                                ((float)value.size() - size.y)))};
+        absSize.x - 1, (int)round(((float)(absSize.y - 1) * (float)(scroll) /
+                                   ((float)value.size() - absSize.y)))};
 
     isScrolled =
         (scrollPosition + absolutePosition() == e.position) && e.value == 'M';
@@ -47,12 +49,14 @@ class ScrollableText : public Element {
   void handleLeftDrag(const InputEvent& e) override {
     if (!isScrolled) return;
 
+    const Vector2 absSize = absoluteSize();
+
     const Vector2 eventRelativePosition = e.position - absolutePosition();
 
     scroll = std::clamp(
-        (int)round((float)(value.size() - size.y) *
-                   (float)eventRelativePosition.y / (float)(size.y - 1)),
-        0, (int)value.size() - size.y);
+        (int)round((float)(value.size() - absSize.y) *
+                   (float)eventRelativePosition.y / (float)(absSize.y - 1)),
+        0, (int)value.size() - absSize.y);
 
     refresh();
   }
@@ -64,23 +68,25 @@ class ScrollableText : public Element {
     }
   }
   void handleScrollDown(const InputEvent& e) override {
-    if (value.size() > size.y + scroll) {
+    if (value.size() > absoluteSize().y + scroll) {
       scroll++;
       refresh();
     }
   }
   void displayScroll() {
+    const Vector2 absSize = absoluteSize();
     Vector2 scrollPosition = {
-        size.x - 1, (int)round(((float)(size.y - 1) * (float)(scroll) /
-                                ((float)value.size() - size.y)))};
+        absSize.x - 1, (int)round(((float)(absSize.y - 1) * (float)(scroll) /
+                                   ((float)value.size() - absSize.y)))};
 
     shared.mainBuffer +=
         ANSI::setFgColor(styles.standard.fgColor) +
         ANSI::setCursorPosition(absolutePosition() + scrollPosition) + "\u2588";
   }
   void draw() override {
+    const Vector2 absSize = absoluteSize();
     shared.mainBuffer += ANSI::setColor(styles.standard);
-    for (int i = 0; i < size.y; i++) {
+    for (int i = 0; i < absoluteSize().y; i++) {
       if (i + scroll >= value.size() || i + scroll < 0) return;
 
       std::string& line = value[i + scroll];
@@ -97,7 +103,8 @@ class ScrollableText : public Element {
     value.insert(value.end(), newLines.begin(), newLines.end());
 
     for (const std::string& line : newLines) {
-      if (line.length() + 2 > size.x) size.x = Utils::getStringWidth(line) + 2;
+      if (line.length() + 2 > absoluteSize().x)
+        size.x = Utils::getStringWidth(line) + 2;
     }
   }
   using Element::Element;

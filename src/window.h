@@ -7,7 +7,6 @@ namespace UTUI {
 
 class Window : public Element {
  public:
-  void setSize(const Vector2& newSize) { size = newSize; }
   template <typename T>
   T& append(unsigned int id = 0) {
     static_assert(std::is_base_of<Element, T>::value,
@@ -42,8 +41,8 @@ class Window : public Element {
     return nullptr;
   }
   void clear() {
-    shared.mainBuffer +=
-        ANSI::clearArea(styles.standard.bgColor, position + 1, size - 2);
+    shared.mainBuffer += ANSI::clearArea(styles.standard.bgColor, position + 1,
+                                         absoluteSize() - 2);
   }
 
   void refresh() {
@@ -121,15 +120,16 @@ class Window : public Element {
       }
     }
 
-    if (!Utils::isInBoundaries(absolutePosition(), size, e.position)) {
+    if (!Utils::isInBoundaries(absolutePosition(), absoluteSize(),
+                               e.position)) {
       return false;
     }
 
     if (e.type == InputEventType::MOUSE_MOVE) {
       for (int i = 0; i < elements.size(); i++) {
         Element* element = elements[i];
-        if (Utils::isInBoundaries(element->absolutePosition(), element->size,
-                                  e.position)) {
+        if (Utils::isInBoundaries(element->absolutePosition(),
+                                  element->absoluteSize(), e.position)) {
           hoveredElement = i;
           elements[hoveredElement]->hovered = true;
           elements[hoveredElement]->startedHover(e);
@@ -140,22 +140,29 @@ class Window : public Element {
     }
     return false;
   }
+  void handleResize() override {
+    for (Element* element : elements) {
+      element->handleResize();
+    }
+  }
+  void draw() override {
+    Vector2 absSize = absoluteSize();
+    if (absSize.x < 3 || absSize.y < 3) absSize = {3, 3};
 
-  void draw() {
     shared.mainBuffer +=
         // Setting colors and position
         ANSI::setColor(styles.standard) +
         ANSI::setCursorPosition(absolutePosition()) +
         // Drawing top border
-        "\u256D" + Utils::multiplyString("\u2500", size.x - 2) + "\u256E" +
+        "\u256D" + Utils::multiplyString("\u2500", absSize.x - 2) + "\u256E" +
         // Drawing middle section
         Utils::multiplyString(
-            ANSI::cursorDown() + ANSI::cursorLeft(size.x) + "\u2502" +
-                Utils::multiplyString(" ", size.x - 2) + "\u2502",
-            size.y - 2) +
+            ANSI::cursorDown() + ANSI::cursorLeft(absSize.x) + "\u2502" +
+                Utils::multiplyString(" ", absSize.x - 2) + "\u2502",
+            absSize.y - 2) +
         // Drawing bottom border
-        ANSI::cursorDown() + ANSI::cursorLeft(size.x) + "\u2570" +
-        Utils::multiplyString("\u2500", size.x - 2) + "\u256F";
+        ANSI::cursorDown() + ANSI::cursorLeft(absSize.x) + "\u2570" +
+        Utils::multiplyString("\u2500", absSize.x - 2) + "\u256F";
   }
 
   friend class Main;

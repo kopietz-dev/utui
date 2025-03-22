@@ -31,7 +31,7 @@ class Element {
   }
   void clear() {
     shared.mainBuffer += ANSI::clearArea(parent->styles.standard.bgColor,
-                                         absolutePosition(), size);
+                                         absolutePosition(), absoluteSize());
   }
   void disable() {
     disabled = true;
@@ -47,33 +47,53 @@ class Element {
     position = v;
     draw();
   }
+  void setSize(Vector2 v) {
+    size = v;
+    refresh();
+  }
+  void setRelativeSize(Vector2 v) { relativeSize = v; }
   void refresh() {
     clear();
     draw();
   }
   void updateStyles() { refresh(); }
-  void setRelativeOffset(const Vector2& v) {
+  void setRelativePosition(Vector2 v) {
     clear();
-    position = v;
+    relativePosition = v;
     draw();
   }
   void setID(unsigned int newID) { id = newID; };
   Vector2 absolutePosition() const {
-    return position +
-           ((parent != nullptr)
-                ? parent->absolutePosition() +
-                      Vector2(
-                          {(int)std::round((float)relativeOffset.x / 100.0f *
-                                           (float)(parent->size.x - 1)),
-                           (int)std::round((float)relativeOffset.y / 100.0f *
-                                           (float)(parent->size.y - 1))})
-                : Vector2());
+    const Vector2 parentSize =
+        (parent != nullptr) ? parent->absoluteSize() : Vector2({0, 0});
+    const Vector2 parentPosition =
+        (parent != nullptr) ? parent->absolutePosition() : Vector2({0, 0});
+
+    const Vector2 relPos = {
+        (int)std::roundf((float)relativePosition.x / 100.0f *
+                         (float)parentSize.x),
+        (int)std::roundf((float)relativePosition.y / 100.0f *
+                         (float)parentSize.y),
+    };
+
+    return relPos + position + parentPosition;
+  }
+  Vector2 absoluteSize() const {
+    const Vector2 parentSize =
+        (parent != nullptr) ? parent->absoluteSize() : Vector2({0, 0});
+
+    const Vector2 relSize = {
+        (int)std::roundf((float)relativeSize.x / 100.0f * (float)parentSize.x),
+        (int)std::roundf((float)relativeSize.y / 100.0f * (float)parentSize.y),
+    };
+
+    return relSize + size;
   }
 
   unsigned int getID() const { return id; }
   Vector2 getSize() const { return size; }
   Vector2 getPosition() const { return position; }
-  Vector2 getRelativeOffset() const { return relativeOffset; }
+  Vector2 getRelativePosition() const { return relativePosition; }
   bool isActive() const { return active; }
 
   virtual ~Element() = default;
@@ -84,9 +104,9 @@ class Element {
   Flag* sRemoveFlag;
   bool active = false, hovered = false;
   unsigned int id;
-  Vector2 size = {1, 1};
+  Vector2 size, relativeSize;
   bool sRemove = false;
-  Vector2 position, relativeOffset;
+  Vector2 position, relativePosition;
 
   Element(SharedValues& shared, const Element* parent, Flag* sRemoveFlag,
           unsigned int id)
@@ -109,6 +129,7 @@ class Element {
   virtual void handleAlfanumKey(const InputEvent& e) {}
   virtual void handleSpecialKey(const InputEvent& e) {}
 
+  virtual void handleResize() {}
   virtual void draw() {}
 
   virtual void initFromString(const std::string& v, bool alias) {}
@@ -116,7 +137,8 @@ class Element {
   bool handleInputEvent(const InputEvent& e) {
     if (disabled ||
         ((e.type < 90 && e.type != InputEventType::MOUSE_DRAG_LEFT) &&
-         !Utils::isInBoundaries(absolutePosition(), size, e.position)))
+         !Utils::isInBoundaries(absolutePosition(), absoluteSize(),
+                                e.position)))
       return false;
 
     switch ((InputEventType)e.type) {

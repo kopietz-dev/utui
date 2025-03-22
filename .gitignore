@@ -1,4 +1,5 @@
-.todo
+*.todo
 *.log
 
 build/
+testing/

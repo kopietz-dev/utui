@@ -184,7 +184,7 @@ class Menu : public Element {
                 currentSize = Utils::getStringWidth(option.value) +
                               additionalSize + deepness;
 
-      if (size.x < currentSize) {
+      if (absoluteSize().x < currentSize) {
         size.x = currentSize;
       }
       shared.mainBuffer += ANSI::setColor(pair);

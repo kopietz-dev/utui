@@ -33,12 +33,13 @@ class TextInput : public Element {
           ANSI::setFgColor(placeholderColor) +
           ANSI::setBgColor(styles.standard.bgColor) +
           ANSI::setCursorPosition(absolutePosition()) + placeholder +
-          Utils::multiplyString(" ", size.x - placeholder.size());
+          Utils::multiplyString(" ", absoluteSize().x - placeholder.size());
     } else {
-      shared.mainBuffer += ANSI::setCursorPosition(absolutePosition()) +
-                           ANSI::setColor(styles.standard) +
-                           (coded ? std::string(value.length(), '*') : value) +
-                           Utils::multiplyString(" ", size.x - value.length());
+      shared.mainBuffer +=
+          ANSI::setCursorPosition(absolutePosition()) +
+          ANSI::setColor(styles.standard) +
+          (coded ? std::string(value.length(), '*') : value) +
+          Utils::multiplyString(" ", absoluteSize().x - value.length());
     }
 
     updateCursorPosition();
@@ -83,7 +84,7 @@ class TextInput : public Element {
         submitListener.trigger();
         break;
       default:
-        if (value.length() < size.x - 1) {
+        if (value.length() < absoluteSize().x - 1) {
           value.insert(value.begin() + cursorPosition, 1, (char)e.value);
 
           cursorPosition++;
@@ -110,6 +111,15 @@ class TextInput : public Element {
     }
 
     updateCursorPosition();
+  }
+  void handleResize() override {
+    const Vector2 absSize = absoluteSize();
+
+    if (absSize.x < value.length()) {
+      value.resize(absSize.x - 1);
+
+      cursorPosition = value.length();
+    }
   }
   void initFromString(const std::string& v, bool alias) override {
     placeholder = v;

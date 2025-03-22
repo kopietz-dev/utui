@@ -10,11 +10,11 @@ class Text : public Element {
     value[index] = v;
     refresh();
     const int stringWidth = Utils::getStringWidth(v);
-    if (size.x < stringWidth) size.x = stringWidth;
+    if (absoluteSize().x < stringWidth) size.x = stringWidth;
   }
   void addLine(const std::string& v, int index) {
     const int stringWidth = Utils::getStringWidth(v);
-    if (size.x < stringWidth) size.x = stringWidth;
+    if (absoluteSize().x < stringWidth) size.x = stringWidth;
 
     value.insert(value.begin() + index, v);
     refresh();

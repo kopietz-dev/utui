@@ -26,8 +26,10 @@ class TextField : public Element {
   void onChange(const std::function<void()>& v) { changeListener.set(v); }
 
   void draw() override {
-    if (value.size() < size.y) {
-      value.resize(size.y);
+    const Vector2 absSize = absoluteSize();
+
+    if (value.size() < absSize.y) {
+      value.resize(absSize.y);
     }
     clear();
     if (scroll == 0 &&
@@ -43,7 +45,7 @@ class TextField : public Element {
     shared.mainBuffer += ANSI::setCursorPosition(absolutePosition()) +
                          ANSI::setColor(styles.standard);
 
-    for (int i = 0; i < size.y; i++) {
+    for (int i = 0; i < absSize.y; i++) {
       if (i + scroll >= value.size()) return;
 
       const std::string& line = value[i + scroll];
@@ -73,7 +75,7 @@ class TextField : public Element {
     updateCursorPosition();
   }
   void newLine() {
-    if (cursorPosition.y + 1 == size.y + scroll) {
+    if (cursorPosition.y + 1 == absoluteSize().y + scroll) {
       scroll++;
     }
     value.insert(value.begin() + cursorPosition.y + 1,
@@ -104,7 +106,7 @@ class TextField : public Element {
         clear();
         break;
       default:
-        if (value[cursorPosition.y].length() < size.x - 1) {
+        if (value[cursorPosition.y].length() < absoluteSize().x - 1) {
           value[cursorPosition.y].insert(
               value[cursorPosition.y].begin() + cursorPosition.x, 1,
               (char)e.value);
@@ -130,6 +132,7 @@ class TextField : public Element {
     updateCursorPosition();
   }
   void handleSpecialKey(const InputEvent& e) override {
+    const Vector2 absSize = absoluteSize();
     switch (e.value) {
       case 'C':
         if (cursorPosition.x < value[cursorPosition.y].length()) {
@@ -140,8 +143,8 @@ class TextField : public Element {
         }
         break;
       case 'B':
-        if (cursorPosition.y == size.y + scroll - 1 &&
-            size.y + scroll < value.size()) {
+        if (cursorPosition.y == absSize.y + scroll - 1 &&
+            absSize.y + scroll < value.size()) {
           scroll++;
           refresh();
         }
@@ -166,6 +169,7 @@ class TextField : public Element {
 
     updateCursorPosition();
   }
+
   void initFromString(const std::string& v, bool alias) override {
     placeholder = v;
   }
