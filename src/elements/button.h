@@ -9,9 +9,9 @@ class Button : public Element {
   void setValue(const std::string& v) {
     value = v;
     refresh();
-    size.x = Utils::getStringWidth(v);
+    size = {Utils::getStringWidth(v), 1};
   }
-  std::string getVaue() { return value; }
+  std::string getValue() { return value; }
 
   void onClick(const std::function<void()>& v) { clickListener.set(v); }
 
@@ -35,7 +35,7 @@ class Button : public Element {
   void initFromString(const std::string& v, bool alias) override {
     value = v;
     refresh();
-    size.x = Utils::getStringWidth(v);
+    size = {Utils::getStringWidth(v), 1};
   }
   using Element::Element;
 };

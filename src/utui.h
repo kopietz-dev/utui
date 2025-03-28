@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 
+#include "elements/bar_chart.h"
 #include "elements/button.h"
 #include "elements/click_menu.h"
 #include "elements/menu.h"

@@ -89,7 +89,6 @@ class Element {
 
     return relSize + size;
   }
-
   unsigned int getID() const { return id; }
   Vector2 getSize() const { return size; }
   Vector2 getPosition() const { return position; }
