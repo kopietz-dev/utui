@@ -6,19 +6,20 @@
 namespace UTUI {
 
 class Window : public Element {
- public:
-  template <typename T>
-  T& append(unsigned int id = 0) {
+public:
+  bool borderVisibility = true;
+
+  template <typename T> T &append(unsigned int id = 0) {
     static_assert(std::is_base_of<Element, T>::value,
                   "T must be a class derived from UTUI::Element");
     elements.push_back(new T(shared, this, sRemoveFlag, id));
 
-    return *dynamic_cast<T*>(elements.back());
+    return *dynamic_cast<T *>(elements.back());
   }
 
-  std::vector<Element*> getElementsById(unsigned int id) {
-    std::vector<Element*> matching;
-    for (Element* element : elements) {
+  std::vector<Element *> getElementsById(unsigned int id) {
+    std::vector<Element *> matching;
+    for (Element *element : elements) {
       if (element->getID() == id) {
         matching.push_back(element);
       }
@@ -27,19 +28,19 @@ class Window : public Element {
     return matching;
   }
 
-  template <typename T>
-  T* getElementById(unsigned int id) {
+  template <typename T> T *getElementById(unsigned int id) {
     static_assert(std::is_base_of<Element, T>::value,
                   "T must be a class derived from UTUI::Element");
 
-    for (Element* element : elements) {
+    for (Element *element : elements) {
       if (element->getID() == id) {
-        return dynamic_cast<T*>(element);
+        return dynamic_cast<T *>(element);
       }
     }
 
     return nullptr;
   }
+
   void clear() {
     shared.mainBuffer += ANSI::clearArea(styles.standard.bgColor, position + 1,
                                          absoluteSize() - 2);
@@ -50,7 +51,7 @@ class Window : public Element {
 
     draw();
 
-    for (Element* element : elements) {
+    for (Element *element : elements) {
       element->draw();
     }
   }
@@ -60,20 +61,20 @@ class Window : public Element {
   }
 
   ~Window() {
-    for (Element* element : elements) {
+    for (Element *element : elements) {
       delete element;
     }
   }
 
- private:
-  std::vector<Element*> elements;
-
+private:
+  std::vector<Element *> elements;
   int hoveredElement = -1, activeElement = -1;
   Flag elementRemoveFlag;
 
-  bool update(const InputEvent& e) {
+  bool update(const InputEvent &e) {
     // check if window is enabled
-    if (disabled) return false;
+    if (disabled)
+      return false;
 
     if (elementRemoveFlag.get()) {
       for (int i = 0; i < elements.size(); i++) {
@@ -81,11 +82,15 @@ class Window : public Element {
           delete elements[i];
           elements.erase(elements.begin() + i);
 
-          if (hoveredElement == i) hoveredElement = -1;
-          if (activeElement == i) activeElement = -1;
+          if (hoveredElement == i)
+            hoveredElement = -1;
+          if (activeElement == i)
+            activeElement = -1;
 
-          if (hoveredElement > i) hoveredElement--;
-          if (activeElement > i) activeElement--;
+          if (hoveredElement > i)
+            hoveredElement--;
+          if (activeElement > i)
+            activeElement--;
 
           i--;
         }
@@ -127,7 +132,7 @@ class Window : public Element {
 
     if (e.type == InputEventType::MOUSE_MOVE) {
       for (int i = 0; i < elements.size(); i++) {
-        Element* element = elements[i];
+        Element *element = elements[i];
         if (Utils::isInBoundaries(element->absolutePosition(),
                                   element->absoluteSize(), e.position)) {
           hoveredElement = i;
@@ -141,31 +146,33 @@ class Window : public Element {
     return false;
   }
   void handleResize() override {
-    for (Element* element : elements) {
+    for (Element *element : elements) {
       element->handleResize();
     }
   }
   void draw() override {
     Vector2 absSize = absoluteSize();
-    if (absSize.x < 3 || absSize.y < 3) absSize = {3, 3};
+    if (absSize.x < 3 || absSize.y < 3)
+      absSize = {3, 3};
 
-    shared.mainBuffer +=
-        // Setting colors and position
-        ANSI::setColor(styles.standard) +
-        ANSI::setCursorPosition(absolutePosition()) +
-        // Drawing top border
-        "\u256D" + Utils::multiplyString("\u2500", absSize.x - 2) + "\u256E" +
-        // Drawing middle section
-        Utils::multiplyString(
-            ANSI::cursorDown() + ANSI::cursorLeft(absSize.x) + "\u2502" +
-                Utils::multiplyString(" ", absSize.x - 2) + "\u2502",
-            absSize.y - 2) +
-        // Drawing bottom border
-        ANSI::cursorDown() + ANSI::cursorLeft(absSize.x) + "\u2570" +
-        Utils::multiplyString("\u2500", absSize.x - 2) + "\u256F";
+    if (borderVisibility)
+      shared.mainBuffer +=
+          // Setting colors and position
+          ANSI::setColor(styles.standard) +
+          ANSI::setCursorPosition(absolutePosition()) +
+          // Drawing top border
+          "\u256D" + Utils::multiplyString("\u2500", absSize.x - 2) + "\u256E" +
+          // Drawing middle section
+          Utils::multiplyString(
+              ANSI::cursorDown() + ANSI::cursorLeft(absSize.x) + "\u2502" +
+                  Utils::multiplyString(" ", absSize.x - 2) + "\u2502",
+              absSize.y - 2) +
+          // Drawing bottom border
+          ANSI::cursorDown() + ANSI::cursorLeft(absSize.x) + "\u2570" +
+          Utils::multiplyString("\u2500", absSize.x - 2) + "\u256F";
   }
 
   friend class Main;
   using Element::Element;
 };
-}  // namespace UTUI
+} // namespace UTUI

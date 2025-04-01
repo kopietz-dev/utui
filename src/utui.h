@@ -21,14 +21,15 @@
 namespace UTUI {
 
 class Main {
- public:
+public:
   static inline const unsigned int GLOBAL_ID = 0;
 
-  static const Vector2& getScreenSize() { return consoleScreen->size; }
+  static const Vector2 &getScreenSize() { return consoleScreen->size; }
   static InputEvent getInputEvent() { return event; }
   static void displayAll() {
-    for (Window* window : windows) {
-      if (!window->disabled) window->refresh();
+    for (Window *window : windows) {
+      if (!window->disabled)
+        window->refresh();
     }
   }
   static void update() {
@@ -38,7 +39,7 @@ class Main {
     if (event.type != InputEventType::NO_EVENT) {
       // Handling event
       for (int i = windows.size() - 1; i >= 0; i--) {
-        Window* window = windows[i];
+        Window *window = windows[i];
 
         if (window->sRemove) {
           windows.erase(windows.begin() + i);
@@ -74,42 +75,43 @@ class Main {
     tcgetattr(STDIN_FILENO, &oldTerm);
     write(1, "\033[?1003l\033[?1006l\033[?25h\033[H\033[J", 28);
   }
-  static Window& append(unsigned int id = 0) {
-    Window* newWindow = new Window(shared, consoleScreen, nullptr, id);
+  static Window &append(unsigned int id = 0) {
+    Window *newWindow = new Window(shared, consoleScreen, nullptr, id);
 
     windows.push_back(newWindow);
     return *windows.back();
   }
-  static Window* getWindowById(unsigned int id) {
-    for (Window* window : windows) {
-      if (window->getID() == id) return window;
+  static Window *getWindowById(unsigned int id) {
+    for (Window *window : windows) {
+      if (window->getID() == id)
+        return window;
     }
 
     return nullptr;
   }
-  static std::vector<Element*> getElementsById(unsigned int id) {
-    std::vector<Element*> matching;
-    for (Window* window : windows) {
-      std::vector<Element*> windowElements = window->getElementsById(id);
+  static std::vector<Element *> getElementsById(unsigned int id) {
+    std::vector<Element *> matching;
+    for (Window *window : windows) {
+      std::vector<Element *> windowElements = window->getElementsById(id);
       matching.insert(windowElements.begin(), windowElements.end(),
                       matching.end());
     }
     return matching;
   }
-  template <typename T>
-  static T* getElementById(unsigned int id) {
+  template <typename T> static T *getElementById(unsigned int id) {
     static_assert(std::is_base_of<Element, T>::value,
                   "T must be a class derived from UTUI::Element");
-    for (Window* window : windows) {
-      Element* matching = window->getElementById<T>(id);
-      if (matching != nullptr) return dynamic_cast<T*>(matching);
+    for (Window *window : windows) {
+      Element *matching = window->getElementById<T>(id);
+      if (matching != nullptr)
+        return dynamic_cast<T *>(matching);
     }
     return nullptr;
   }
   static void hideCursor() { shared.mainBuffer += ANSI::hideCursor(); }
   static void showCursor() { shared.mainBuffer += ANSI::showCursor(); }
   static void disableScroll() { shared.mainBuffer += ANSI::disableScroll(); }
-  static void setBgColor(const Color& color) {
+  static void setBgColor(const Color &color) {
     consoleScreen->styles.standard.bgColor = color;
     shared.mainBuffer +=
         ANSI::setBgColor(consoleScreen->styles.standard.bgColor);
@@ -142,9 +144,9 @@ class Main {
     clearScreen();
   }
 
-  static void setColorProperty(
-      const std::unordered_map<std::string, std::string>& params,
-      const std::string& key, Color& property) {
+  static void
+  setColorProperty(const std::unordered_map<std::string, std::string> &params,
+                   const std::string &key, Color &property) {
     auto it = params.find(key);
     if (it != params.end()) {
       if (it->second[0] == '$') {
@@ -161,27 +163,27 @@ class Main {
       }
     }
   }
-  static void setVector2Property(
-      const std::unordered_map<std::string, std::string>& params,
-      const std::string& key, Vector2& property) {
+  static void
+  setVector2Property(const std::unordered_map<std::string, std::string> &params,
+                     const std::string &key, Vector2 &property) {
     auto it = params.find(key);
     if (it != params.end()) {
       property = Utils::stringToVector2(it->second);
     }
   }
 
-  static void appendFromFile(const std::string& filename) {
+  static void appendFromFile(const std::string &filename) {
     std::vector<std::unordered_map<std::string, std::string>> elementParams =
         parser.appendFromFile(filename);
 
-    Window* winPointer = nullptr;
-    Element* elemPointer = nullptr;
+    Window *winPointer = nullptr;
+    Element *elemPointer = nullptr;
 
-    for (const std::unordered_map<std::string, std::string>& params :
+    for (const std::unordered_map<std::string, std::string> &params :
          elementParams) {
       elemPointer = nullptr;
 
-      const std::string& type = params.find("type")->second;
+      const std::string &type = params.find("type")->second;
 
       if (type[0] == '$') {
         variables[type] = params.find("value")->second;
@@ -193,21 +195,32 @@ class Main {
       if (type == "#window") {
         winPointer = &append();
         elemPointer = winPointer;
+
+        if (auto it = params.find("borderVisibility"); it != params.end())
+          winPointer->borderVisibility = (it->second == "true");
       }
-      if (type == "#button") elemPointer = &winPointer->append<Button>();
+      if (type == "#button")
+        elemPointer = &winPointer->append<Button>();
       if (type == "#scrollable_text")
         elemPointer = &winPointer->append<ScrollableText>();
       if (type == "#scrollable_menu")
         elemPointer = &winPointer->append<ScrollableMenu>();
-      if (type == "#text_input") elemPointer = &winPointer->append<TextInput>();
-      if (type == "#text") elemPointer = &winPointer->append<Text>();
-      if (type == "#click_menu") elemPointer = &winPointer->append<ClickMenu>();
+      if (type == "#text_input")
+        elemPointer = &winPointer->append<TextInput>();
+      if (type == "#text")
+        elemPointer = &winPointer->append<Text>();
+      if (type == "#click_menu")
+        elemPointer = &winPointer->append<ClickMenu>();
       if (type == "#progress_bar")
         elemPointer = &winPointer->append<ProgressBar>();
-      if (type == "#tabbar") elemPointer = &winPointer->append<Tabbar>();
-      if (type == "#text_field") elemPointer = &winPointer->append<TextField>();
-      if (type == "#switch") elemPointer = &winPointer->append<Switch>();
-      if (type == "#menu") elemPointer = &winPointer->append<Menu>();
+      if (type == "#tabbar")
+        elemPointer = &winPointer->append<Tabbar>();
+      if (type == "#text_field")
+        elemPointer = &winPointer->append<TextField>();
+      if (type == "#switch")
+        elemPointer = &winPointer->append<Switch>();
+      if (type == "#menu")
+        elemPointer = &winPointer->append<Menu>();
 
       if (elemPointer != nullptr) {
         setColorProperty(params, "fgColor",
@@ -249,20 +262,20 @@ class Main {
     }
   }
 
-  static void onResize(const std::function<void()>& v) {
+  static void onResize(const std::function<void()> &v) {
     resizeListener.set(v);
   }
-  static void onExit(const std::function<void()>& v) { exitListener.set(v); }
+  static void onExit(const std::function<void()> &v) { exitListener.set(v); }
 
- private:
+private:
   static inline SharedValues shared;
-  static inline std::vector<Window*> windows;
+  static inline std::vector<Window *> windows;
   static inline InputEvent event;
   static inline struct termios oldTerm;
   static inline EventListener resizeListener, exitListener;
   static inline Parser parser;
 
-  static inline Screen* consoleScreen = new Screen(shared, nullptr, nullptr, 0);
+  static inline Screen *consoleScreen = new Screen(shared, nullptr, nullptr, 0);
 
   static inline std::unordered_map<std::string, std::string> variables;
 
@@ -309,11 +322,11 @@ class Main {
 
     consoleScreen->size = {win_size.ws_col, win_size.ws_row};
 
-    for (Window* window : windows) {
+    for (Window *window : windows) {
       window->handleResize();
     }
 
     resizeListener.trigger();
   }
 };
-}  // namespace UTUI
+} // namespace UTUI

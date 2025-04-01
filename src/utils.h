@@ -12,8 +12,8 @@
 
 namespace UTUI {
 class Utils {
- public:
-  static std::string multiplyString(const std::string& str, int times) {
+public:
+  static std::string multiplyString(const std::string &str, int times) {
     std::string rstr;
     rstr.reserve(str.length() * times);
     for (int i = 0; i < times; i++) {
@@ -22,7 +22,7 @@ class Utils {
 
     return rstr;
   }
-  static std::vector<std::string> readFile(const std::string& filename,
+  static std::vector<std::string> readFile(const std::string &filename,
                                            char delimiter = '\n') {
     std::vector<std::string> lines;
     std::ifstream file(filename);
@@ -42,7 +42,7 @@ class Utils {
     }
     return lines;
   }
-  static std::vector<std::string> splitString(const std::string& str,
+  static std::vector<std::string> splitString(const std::string &str,
                                               char delimiter) {
     std::string buffer = "";
     std::vector<std::string> result;
@@ -62,46 +62,55 @@ class Utils {
 
     return result;
   }
-  static std::string mergeString(const std::vector<std::string>& str,
+  static std::string mergeString(const std::vector<std::string> &str,
                                  char delimiter) {
     std::string buf;
 
-    for (const std::string& s : str) {
+    for (const std::string &s : str) {
       buf += s + delimiter;
     }
 
     return buf;
   }
-  static bool isInBoundaries(const Vector2& position, const Vector2& size,
+  static bool isInBoundaries(const Vector2 &position, const Vector2 &size,
                              const Vector2 cursorPosition) {
     return cursorPosition.x >= position.x &&
            cursorPosition.x < (position.x + size.x) &&
            cursorPosition.y >= position.y &&
            cursorPosition.y < (position.y + size.y);
   }
-  static int getStringWidth(const std::string& str) {
+  static int getStringWidth(const std::string &str) {
     static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
     const std::wstring wstr = converter.from_bytes(str);
     int width = wcswidth(wstr.c_str(), wstr.size());
 
     return width;
   }
-  static Color stringToColor(const std::string& str) {
+  static Color stringToColor(const std::string &str) {
+
+    if (int hashPosition = str.find_first_of('#');
+        hashPosition != std::string::npos) {
+      return {std::stoi(str.substr(hashPosition + 1, 2), 0, 16),
+              std::stoi(str.substr(hashPosition + 3, 2), 0, 16),
+              std::stoi(str.substr(hashPosition + 5, 2), 0, 16)};
+    }
+
     std::vector<std::string> values = splitString(str, ',');
+
     if (values.size() < 3) {
       return {0, 0, 0};
     }
     return {std::stoi(values[0]), std::stoi(values[1]), std::stoi(values[2])};
   }
-  static Vector2 stringToVector2(const std::string& str) {
+  static Vector2 stringToVector2(const std::string &str) {
     std::vector<std::string> values = splitString(str, ',');
     if (values.size() < 2) {
       return {0, 0};
     }
     return {std::stoi(values[0]), std::stoi(values[1])};
   }
-  static void throwError(const std::string& msg) {
+  static void throwError(const std::string &msg) {
     throw std::runtime_error(msg);
   }
 };
-}  // namespace UTUI
+} // namespace UTUI
