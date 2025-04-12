@@ -41,11 +41,6 @@ public:
     return nullptr;
   }
 
-  void clear() {
-    shared.mainBuffer += ANSI::clearArea(styles.standard.bgColor, position + 1,
-                                         absoluteSize() - 2);
-  }
-
   void refresh() {
     clear();
 
@@ -151,11 +146,12 @@ private:
     }
   }
   void draw() override {
-    Vector2 absSize = absoluteSize();
-    if (absSize.x < 3 || absSize.y < 3)
-      absSize = {3, 3};
+    const Vector2 absSize = absoluteSize();
 
-    if (borderVisibility)
+    if (absSize.x < 3 || absSize.y < 3)
+      return;
+
+    if (borderVisibility) {
       shared.mainBuffer +=
           // Setting colors and position
           ANSI::setColor(styles.standard) +
@@ -170,8 +166,16 @@ private:
           // Drawing bottom border
           ANSI::cursorDown() + ANSI::cursorLeft(absSize.x) + "\u2570" +
           Utils::multiplyString("\u2500", absSize.x - 2) + "\u256F";
+    } else {
+      shared.mainBuffer +=
+          ANSI::setColor(styles.standard) +
+          ANSI::setCursorPosition(absolutePosition()) +
+          Utils::multiplyString((Utils::multiplyString(" ", absSize.x) +
+                                 ANSI::cursorLeft(absSize.x) +
+                                 ANSI::cursorDown(1)),
+                                absSize.y);
+    }
   }
-
   friend class Main;
   using Element::Element;
 };

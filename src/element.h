@@ -18,7 +18,7 @@ struct Styles {
 };
 
 class Element {
- public:
+public:
   Styles styles;
   bool disabled = false;
 
@@ -42,7 +42,7 @@ class Element {
     draw();
   }
 
-  void setPosition(const Vector2& v) {
+  void setPosition(const Vector2 &v) {
     clear();
     position = v;
     draw();
@@ -70,9 +70,9 @@ class Element {
         (parent != nullptr) ? parent->absolutePosition() : Vector2({0, 0});
 
     const Vector2 relPos = {
-        (int)std::roundf((float)relativePosition.x / 100.0f *
+        (int)std::floorf((float)relativePosition.x / 100.0f *
                          (float)parentSize.x),
-        (int)std::roundf((float)relativePosition.y / 100.0f *
+        (int)std::floorf((float)relativePosition.y / 100.0f *
                          (float)parentSize.y),
     };
 
@@ -83,8 +83,10 @@ class Element {
         (parent != nullptr) ? parent->absoluteSize() : Vector2({0, 0});
 
     const Vector2 relSize = {
-        (int)std::roundf((float)relativeSize.x / 100.0f * (float)parentSize.x),
-        (int)std::roundf((float)relativeSize.y / 100.0f * (float)parentSize.y),
+        (int)std::floorf((float)(relativeSize.x) / 100.0f *
+                         (float)parentSize.x),
+        (int)std::floorf((float)(relativeSize.y) / 100.0f *
+                         (float)parentSize.y),
     };
 
     return relSize + size;
@@ -97,43 +99,43 @@ class Element {
 
   virtual ~Element() = default;
 
- protected:
-  SharedValues& shared;
-  const Element* parent;
-  Flag* sRemoveFlag;
+protected:
+  SharedValues &shared;
+  const Element *parent;
+  Flag *sRemoveFlag;
   bool active = false, hovered = false;
   unsigned int id;
   Vector2 size, relativeSize;
   bool sRemove = false;
   Vector2 position, relativePosition;
 
-  Element(SharedValues& shared, const Element* parent, Flag* sRemoveFlag,
+  Element(SharedValues &shared, const Element *parent, Flag *sRemoveFlag,
           unsigned int id)
-      : shared(shared), parent(parent), sRemoveFlag(sRemoveFlag), id(id){};
+      : shared(shared), parent(parent), sRemoveFlag(sRemoveFlag), id(id) {};
 
-  virtual void startedHover(const InputEvent& e) {}
-  virtual void stoppedHover(const InputEvent& e) {}
+  virtual void startedHover(const InputEvent &e) {}
+  virtual void stoppedHover(const InputEvent &e) {}
 
-  virtual void activate(const InputEvent& e) {}
-  virtual void deactivate(const InputEvent& e) {}
+  virtual void activate(const InputEvent &e) {}
+  virtual void deactivate(const InputEvent &e) {}
 
-  virtual void handleLeftClick(const InputEvent& e) {}
-  virtual void handleMouseMove(const InputEvent& e) {}
-  virtual void handleRightClick(const InputEvent& e) {}
-  virtual void handleLeftDrag(const InputEvent& e) {}
+  virtual void handleLeftClick(const InputEvent &e) {}
+  virtual void handleMouseMove(const InputEvent &e) {}
+  virtual void handleRightClick(const InputEvent &e) {}
+  virtual void handleLeftDrag(const InputEvent &e) {}
 
-  virtual void handleScrollUp(const InputEvent& e) {}
-  virtual void handleScrollDown(const InputEvent& e) {}
+  virtual void handleScrollUp(const InputEvent &e) {}
+  virtual void handleScrollDown(const InputEvent &e) {}
 
-  virtual void handleAlfanumKey(const InputEvent& e) {}
-  virtual void handleSpecialKey(const InputEvent& e) {}
+  virtual void handleAlfanumKey(const InputEvent &e) {}
+  virtual void handleSpecialKey(const InputEvent &e) {}
 
   virtual void handleResize() {}
   virtual void draw() {}
 
-  virtual void initFromString(const std::string& v, bool alias) {}
+  virtual void initFromString(const std::string &v, bool alias) {}
 
-  bool handleInputEvent(const InputEvent& e) {
+  bool handleInputEvent(const InputEvent &e) {
     if (disabled ||
         ((e.type < 90 && e.type != InputEventType::MOUSE_DRAG_LEFT) &&
          !Utils::isInBoundaries(absolutePosition(), absoluteSize(),
@@ -141,30 +143,30 @@ class Element {
       return false;
 
     switch ((InputEventType)e.type) {
-      case InputEventType::MOUSE_LEFT_CLICK:
-        handleLeftClick(e);
-        break;
-      case InputEventType::MOUSE_MOVE:
-        handleMouseMove(e);
-        break;
-      case InputEventType::MOUSE_RIGHT_CLICK:
-        handleRightClick(e);
-        break;
-      case InputEventType::MOUSE_DRAG_LEFT:
-        handleLeftDrag(e);
-        break;
-      case InputEventType::SCROLL_UP:
-        handleScrollUp(e);
-        break;
-      case InputEventType::SCROLL_DOWN:
-        handleScrollDown(e);
-        break;
-      case InputEventType::ALFANUMERICAL_KEY:
-        handleAlfanumKey(e);
-        break;
-      case InputEventType::SPECIAL_KEY:
-        handleSpecialKey(e);
-        break;
+    case InputEventType::MOUSE_LEFT_CLICK:
+      handleLeftClick(e);
+      break;
+    case InputEventType::MOUSE_MOVE:
+      handleMouseMove(e);
+      break;
+    case InputEventType::MOUSE_RIGHT_CLICK:
+      handleRightClick(e);
+      break;
+    case InputEventType::MOUSE_DRAG_LEFT:
+      handleLeftDrag(e);
+      break;
+    case InputEventType::SCROLL_UP:
+      handleScrollUp(e);
+      break;
+    case InputEventType::SCROLL_DOWN:
+      handleScrollDown(e);
+      break;
+    case InputEventType::ALFANUMERICAL_KEY:
+      handleAlfanumKey(e);
+      break;
+    case InputEventType::SPECIAL_KEY:
+      handleSpecialKey(e);
+      break;
     }
     return true;
   }
@@ -172,4 +174,4 @@ class Element {
   friend class Main;
 };
 
-}  // namespace UTUI
+} // namespace UTUI

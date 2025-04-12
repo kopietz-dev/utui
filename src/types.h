@@ -1,5 +1,4 @@
 #pragma once
-
 #include <sys/ioctl.h>
 #include <termios.h>
 
@@ -29,7 +28,7 @@ enum class InputEventType {
 };
 
 class Flag {
- public:
+public:
   void set() { value = true; }
   bool get() {
     if (value) {
@@ -39,20 +38,20 @@ class Flag {
       return false;
   }
 
- private:
+private:
   bool value = false;
 };
 struct Vector2 {
   int x = 0, y = 0;
 
-  Vector2 operator+(const Vector2& v) const { return {x + v.x, y + v.y}; }
-  Vector2 operator-(const Vector2& v) const { return {x - v.x, y - v.y}; }
+  Vector2 operator+(const Vector2 &v) const { return {x + v.x, y + v.y}; }
+  Vector2 operator-(const Vector2 &v) const { return {x - v.x, y - v.y}; }
 
-  Vector2 operator+(const int& v) const { return {x + v, y + v}; }
-  Vector2 operator-(const int& v) const { return {x - v, y - v}; }
+  Vector2 operator+(const int &v) const { return {x + v, y + v}; }
+  Vector2 operator-(const int &v) const { return {x - v, y - v}; }
 
-  Vector2 operator/(const int& v) const { return {x / v, y / v}; }
-  bool operator==(const Vector2& v) const { return (x == v.x && y == v.y); }
+  Vector2 operator/(const int &v) const { return {x / v, y / v}; }
+  bool operator==(const Vector2 &v) const { return (x == v.x && y == v.y); }
 };
 
 struct InputEvent {
@@ -62,27 +61,34 @@ struct InputEvent {
 
 struct Color {
   int r = 255, g = 255, b = 255;
-  Color operator+(const Color& v) { return {r + v.r, g + v.g, b + v.b}; }
-  Color operator-(const Color& v) { return {r - v.r, g - v.g, b - v.b}; }
-  Color operator+(const int& v) { return {r + v, g + v, b + v}; }
-  Color operator-(const int& v) { return {r - v, g - v, b - v}; }
+  Color operator+(const Color &v) { return {r + v.r, g + v.g, b + v.b}; }
+  Color operator-(const Color &v) { return {r - v.r, g - v.g, b - v.b}; }
+  Color operator+(const int &v) { return {r + v, g + v, b + v}; }
+  Color operator-(const int &v) { return {r - v, g - v, b - v}; }
 
   Color operator!() const { return {255 - r, 255 - g, 255 - b}; }
 };
 struct ColorPair {
   Color fgColor = {255, 255, 255}, bgColor = {0, 0, 0};
+  operator std::string() const {
+    char buffer[40];
+    std::snprintf(buffer, 40, "\033[38;2;%d;%d;%dm\033[48;2;%d;%d;%dm",
+                  fgColor.r, fgColor.g, fgColor.b, bgColor.r, bgColor.g,
+                  bgColor.b);
+    return std::string(buffer);
+  }
 };
 struct Cursor {
- public:
-  void setColor(const Color& v) {
+public:
+  void setColor(const Color &v) {
     color = v;
     updated.set();
   }
-  void setPosition(const Vector2& v) { position = v; }
+  void setPosition(const Vector2 &v) { position = v; }
   void show() { visible = true; }
   void hide() { visible = false; }
 
- private:
+private:
   Vector2 position = {1, 1};
   Color color = {255, 255, 255};
   bool visible = false;
@@ -98,4 +104,4 @@ bool operator==(int l, InputEventType r) { return l == static_cast<int>(r); }
 bool operator==(InputEventType l, int r) { return r == l; }
 bool operator!=(InputEventType l, int r) { return !(r == l); }
 bool operator!=(int l, InputEventType r) { return !(r == l); }
-}  // namespace UTUI
+} // namespace UTUI

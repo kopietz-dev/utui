@@ -14,6 +14,9 @@ namespace UTUI {
 class Utils {
 public:
   static std::string multiplyString(const std::string &str, int times) {
+    if (times <= 0)
+      return "";
+
     std::string rstr;
     rstr.reserve(str.length() * times);
     for (int i = 0; i < times; i++) {

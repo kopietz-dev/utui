@@ -117,7 +117,11 @@ public:
         ANSI::setBgColor(consoleScreen->styles.standard.bgColor);
     clearScreen();
   }
-  static void clearScreen() { shared.mainBuffer += ANSI::clearScreen(); }
+  static void clearScreen() {
+    shared.mainBuffer +=
+        ANSI::setBgColor(consoleScreen->styles.standard.bgColor) +
+        ANSI::clearScreen();
+  }
   static void init() {
     setlocale(LC_ALL, "");
     struct termios term;
@@ -143,24 +147,29 @@ public:
     disableScroll();
     clearScreen();
   }
+  static std::string getVariable(const std::string &key) {
+    auto var = variables.find(key);
 
+    if (var != variables.end())
+      return var->second;
+    else {
+      Utils::throwError("Variable \"" + key + "\" does not exist!\n");
+    }
+    return "";
+  }
   static void
   setColorProperty(const std::unordered_map<std::string, std::string> &params,
-                   const std::string &key, Color &property) {
+                   const std::string &key, Color &property,
+                   const Color &parentProperty) {
     auto it = params.find(key);
     if (it != params.end()) {
       if (it->second[0] == '$') {
-        auto var = variables.find(it->second);
-
-        if (var != variables.end())
-          property = Utils::stringToColor(var->second);
-        else {
-          Utils::throwError("Variable \"" + it->second +
-                            "\" does not exist!\n");
-        }
+        property = Utils::stringToColor(getVariable(it->second));
       } else {
         property = Utils::stringToColor(it->second);
       }
+    } else {
+      property = parentProperty;
     }
   }
   static void
@@ -224,18 +233,24 @@ public:
 
       if (elemPointer != nullptr) {
         setColorProperty(params, "fgColor",
-                         elemPointer->styles.standard.fgColor);
+                         elemPointer->styles.standard.fgColor,
+                         elemPointer->parent->styles.standard.fgColor);
         setColorProperty(params, "bgColor",
-                         elemPointer->styles.standard.bgColor);
+                         elemPointer->styles.standard.bgColor,
+                         elemPointer->parent->styles.standard.bgColor);
         setColorProperty(params, "hover.fgColor",
-                         elemPointer->styles.hover.fgColor);
+                         elemPointer->styles.hover.fgColor,
+                         elemPointer->parent->styles.hover.fgColor);
         setColorProperty(params, "hover.bgColor",
-                         elemPointer->styles.hover.bgColor);
+                         elemPointer->styles.hover.bgColor,
+                         elemPointer->parent->styles.hover.bgColor);
 
         setColorProperty(params, "selected.fgColor",
-                         elemPointer->styles.selected.fgColor);
+                         elemPointer->styles.selected.fgColor,
+                         elemPointer->parent->styles.selected.fgColor);
         setColorProperty(params, "selected.bgColor",
-                         elemPointer->styles.selected.bgColor);
+                         elemPointer->styles.selected.bgColor,
+                         elemPointer->parent->styles.selected.bgColor);
 
         setVector2Property(params, "relativePosition",
                            elemPointer->relativePosition);
@@ -248,8 +263,7 @@ public:
 
         if (auto it = params.find("value"); it != params.end()) {
           if (it->second[0] == '$') {
-            elemPointer->initFromString(variables.find(it->second)->second,
-                                        true);
+            elemPointer->initFromString(getVariable(it->second), true);
           } else {
             elemPointer->initFromString(it->second, false);
           }
@@ -258,7 +272,12 @@ public:
     }
 
     if (auto it = variables.find("$global.bgColor"); it != variables.end()) {
-      setBgColor(Utils::stringToColor(it->second));
+      if (it->second[0] == '$') {
+        setBgColor(Utils::stringToColor(getVariable(it->second)));
+
+      } else {
+        setBgColor(Utils::stringToColor(it->second));
+      }
     }
   }
 
