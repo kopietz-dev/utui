@@ -64,10 +64,16 @@ public:
   }
   static std::string clearArea(const Color &bgColor, const Vector2 &position,
                                const Vector2 &size) {
-    return setBgColor(bgColor) + setCursorPosition(position) +
-           Utils::multiplyString(Utils::multiplyString(" ", size.x) +
-                                     cursorDown() + cursorLeft(size.x),
-                                 size.y);
+    std::string buffer;
+
+    buffer += ANSI::setBgColor(bgColor);
+
+    for (int i = 0; i < size.y; i++) {
+      buffer += ANSI::setCursorPosition(position + Vector2({0, i})) +
+                Utils::multiplyString(" ", size.x);
+    }
+
+    return buffer;
   }
 
 private:

@@ -21,6 +21,8 @@ class Element {
 public:
   Styles styles;
   bool disabled = false;
+  Vector2 position, relativePosition;
+  Vector2 size, relativeSize;
 
   void remove() {
     disabled = true;
@@ -70,9 +72,9 @@ public:
         (parent != nullptr) ? parent->absolutePosition() : Vector2({0, 0});
 
     const Vector2 relPos = {
-        (int)std::floorf((float)relativePosition.x / 100.0f *
+        (int)std::roundf((float)relativePosition.x / 100.0f *
                          (float)parentSize.x),
-        (int)std::floorf((float)relativePosition.y / 100.0f *
+        (int)std::roundf((float)relativePosition.y / 100.0f *
                          (float)parentSize.y),
     };
 
@@ -83,13 +85,15 @@ public:
         (parent != nullptr) ? parent->absoluteSize() : Vector2({0, 0});
 
     const Vector2 relSize = {
-        (int)std::floorf((float)(relativeSize.x) / 100.0f *
+        (int)std::roundf((float)(relativeSize.x) / 100.0f *
                          (float)parentSize.x),
-        (int)std::floorf((float)(relativeSize.y) / 100.0f *
+        (int)std::roundf((float)(relativeSize.y) / 100.0f *
                          (float)parentSize.y),
     };
-
-    return relSize + size;
+    if (parent != nullptr)
+      return relSize + size;
+    else
+      return size;
   }
   unsigned int getID() const { return id; }
   Vector2 getSize() const { return size; }
@@ -105,9 +109,7 @@ protected:
   Flag *sRemoveFlag;
   bool active = false, hovered = false;
   unsigned int id;
-  Vector2 size, relativeSize;
   bool sRemove = false;
-  Vector2 position, relativePosition;
 
   Element(SharedValues &shared, const Element *parent, Flag *sRemoveFlag,
           unsigned int id)

@@ -1,42 +1,51 @@
-#include <math.h>
-
-#include <algorithm>
-#include <cmath>
-#include <fstream>
-
 #include "../element.h"
 
 namespace UTUI {
+
 class ScrollableMenu : public Element {
 public:
-  void setSize(int newSize) { size.y = newSize; }
-
+  EventListener onChange;
   void setScroll(int newScroll) {
-    scroll = std::clamp(newScroll, 0, (int)(value.size() - absoluteSize().y));
+    scroll = std::clamp(newScroll, 0, (int)(options.size() - absoluteSize().y));
   }
-  int getScroll() const { return scroll; }
+  int getSelected() { return selected; }
 
-  int getOptionsSize() { return value.size(); }
-  void addOption(const std::string &v, int index) {
-    const int stringWidth = Utils::getStringWidth(v);
-    if (absoluteSize().x < stringWidth + 2)
-      size.x = stringWidth + 2;
+  void clearValue() { options.clear(); }
 
-    if (index <= selected && selected != -1)
-      selected++;
-    value.insert(value.begin() + index, v);
+  void pushOption(const std::string &v) { options.push_back({v}); }
+  void popOption() { options.pop_back(); }
+
+  void setSelected(int index) {
+    int prevSelected = selected;
+    selected = index;
+
+    displayOption(prevSelected);
+    displayOption(selected);
+
+    onChange.trigger();
   }
-  void addOption(const std::string &v) { addOption(v, getOptionsSize()); }
-  void deleteOption(int index) { value.erase(value.begin() + index); }
 
-  void onChange(const std::function<void()> &v) { changeListener.set(v); }
+  void removeOption(int index) { options.erase(options.begin() + index); }
+
+  void draw() override {
+    shared.mainBuffer += ANSI::setCursorPosition(absolutePosition());
+
+    const Vector2 absSize = absoluteSize();
+    for (int i = scroll; i < scroll + absSize.y; i++) {
+      if (i >= options.size())
+        break;
+
+      displayOption(i);
+    }
+
+    drawScroll();
+  }
 
 private:
-  std::vector<std::string> value;
-  int selected = 0, hovered = -1;
+  std::vector<std::string> options;
   int scroll = 0;
+  int hovered = -1, selected = 0;
   bool isScrolled = false;
-  EventListener changeListener;
   void handleLeftDrag(const InputEvent &e) override {
     if (!isScrolled)
       return;
@@ -45,9 +54,9 @@ private:
                   absSize = absoluteSize();
 
     scroll = std::clamp(
-        (int)round(((value.size() - absSize.y) * eventRelativePosition.y) /
+        (int)round(((options.size() - absSize.y) * eventRelativePosition.y) /
                    (float)(absSize.y - 1)),
-        0, (int)value.size() - absSize.y);
+        0, (int)options.size() - absSize.y);
 
     refresh();
   }
@@ -59,7 +68,7 @@ private:
     }
   }
   void handleScrollDown(const InputEvent &e) override {
-    if (value.size() > absoluteSize().y + scroll) {
+    if (options.size() > absoluteSize().y + scroll) {
       scroll++;
       refresh();
     }
@@ -69,83 +78,81 @@ private:
     if (relativePosition.x < absoluteSize().x - 2) {
       int index = relativePosition.y + scroll;
 
+      int prevHovered = hovered;
       hovered = index;
-      refresh();
+      displayOption(hovered);
+      displayOption(prevHovered);
+
     } else if (hovered != -1) {
-      hovered = -1;
-      refresh();
+      stoppedHover(e);
     }
   }
   void handleLeftClick(const InputEvent &e) override {
     Vector2 absSize = absoluteSize();
+
     Vector2 scrollPosition = {
         absSize.x - 1, (int)round(((float)(absSize.y - 1) * (float)(scroll) /
-                                   ((float)value.size() - absSize.y)))};
+                                   ((float)options.size() - absSize.y)))};
 
-    isScrolled =
-        (scrollPosition + absolutePosition() == e.position) && e.value == 'M';
-
+    isScrolled = (scrollPosition + absolutePosition() == e.position) &&
+                 e.value == 'M' && options.size() > absSize.y;
     const Vector2 relativePosition = e.position - absolutePosition();
     if (relativePosition.x < absSize.x - 2) {
-      selected = relativePosition.y + scroll;
-      changeListener.trigger();
-      refresh();
+      setSelected(relativePosition.y + scroll);
     }
   }
-  void stoppedHover(const InputEvent &e) override {
-    if (hovered != -1) {
-      hovered = -1;
-      draw();
-    }
-  }
-  void deactivate(const InputEvent &e) override {
-    if (selected != -1) {
-      selected = -1;
-      draw();
-    }
-  }
-  void displayScroll() {
+
+  void displayOption(int index) {
     Vector2 absSize = absoluteSize();
+    if ((index < scroll || index > scroll + absSize.y) || index < 0 ||
+        index >= options.size())
+      return;
+
+    shared.mainBuffer +=
+        ANSI::setCursorPosition(absolutePosition() +
+                                Vector2({0, index - scroll})) +
+        ANSI::setColor(
+            (selected == index)
+                ? styles.selected
+                : ((hovered == index) ? styles.hover : styles.standard)) +
+        options[index] +
+        Utils::multiplyString(" ", absSize.x - options[index].size() - 1);
+  }
+
+  void drawScroll() {
+
+    Vector2 absSize = absoluteSize();
+    if (options.size() <= absSize.y)
+      return;
 
     Vector2 scrollPosition = {
         absSize.x - 1, (int)round(((float)(absSize.y - 1) * (float)(scroll) /
-                                   ((float)value.size() - absSize.y)))};
+                                   ((float)options.size() - absSize.y)))};
 
     shared.mainBuffer +=
-        ANSI::setFgColor(styles.standard.bgColor) +
+        ANSI::setFgColor(styles.standard.fgColor) +
         ANSI::setCursorPosition(absolutePosition() + scrollPosition) + "\u2588";
   }
 
-  void draw() override {
-    shared.mainBuffer += ANSI::setColor(styles.standard) +
-                         ANSI::setCursorPosition(absolutePosition());
-    for (int i = 0; i < absoluteSize().y; i++) {
-      if (i + scroll >= value.size() || i + scroll < 0)
-        return;
-
-      std::string &line = value[i + scroll];
-
-      ColorPair pair = (i + scroll == selected)
-                           ? (styles.selected)
-                           : (i == hovered ? styles.hover : styles.standard);
-
-      shared.mainBuffer += ANSI::setColor(pair) + line + ANSI::cursorDown() +
-                           ANSI::cursorLeft(line.length());
+  void stoppedHover(const InputEvent &e) override {
+    if (hovered != -1) {
+      int prevHovered = hovered;
+      hovered = -1;
+      displayOption(prevHovered);
     }
-
-    displayScroll();
   }
+
   void initFromString(const std::string &v, bool alias) override {
     const std::vector<std::string> newLines =
         Utils::splitString(v, alias ? '\n' : ',');
-    value.insert(value.end(), newLines.begin(), newLines.end());
+    options.insert(options.end(), newLines.begin(), newLines.end());
 
     for (const std::string &line : newLines) {
       if (line.length() + 2 > absoluteSize().x)
         size.x = Utils::getStringWidth(line) + 2;
     }
   }
-
   using Element::Element;
 };
+
 } // namespace UTUI

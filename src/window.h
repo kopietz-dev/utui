@@ -43,11 +43,10 @@ public:
 
   void refresh() {
     clear();
-
     draw();
 
     for (Element *element : elements) {
-      element->draw();
+      element->refresh();
     }
   }
   void remove() {
@@ -146,15 +145,13 @@ private:
     }
   }
   void draw() override {
-    const Vector2 absSize = absoluteSize();
+    const Vector2 absSize = absoluteSize(), absPos = absolutePosition();
 
-    if (absSize.x < 3 || absSize.y < 3)
-      return;
+    shared.mainBuffer += ANSI::setColor(styles.standard);
 
     if (borderVisibility) {
       shared.mainBuffer +=
           // Setting colors and position
-          ANSI::setColor(styles.standard) +
           ANSI::setCursorPosition(absolutePosition()) +
           // Drawing top border
           "\u256D" + Utils::multiplyString("\u2500", absSize.x - 2) + "\u256E" +
@@ -167,15 +164,11 @@ private:
           ANSI::cursorDown() + ANSI::cursorLeft(absSize.x) + "\u2570" +
           Utils::multiplyString("\u2500", absSize.x - 2) + "\u256F";
     } else {
-      shared.mainBuffer +=
-          ANSI::setColor(styles.standard) +
-          ANSI::setCursorPosition(absolutePosition()) +
-          Utils::multiplyString((Utils::multiplyString(" ", absSize.x) +
-                                 ANSI::cursorLeft(absSize.x) +
-                                 ANSI::cursorDown(1)),
-                                absSize.y);
+      shared.mainBuffer += ANSI::clearArea(styles.standard.bgColor,
+                                           absolutePosition(), absoluteSize());
     }
   }
+
   friend class Main;
   using Element::Element;
 };

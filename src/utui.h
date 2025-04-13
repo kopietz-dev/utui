@@ -138,10 +138,10 @@ public:
 
     consoleScreen->position = {1, 1};
 
-    handleResizeSignal(0);
-
     std::signal(SIGINT, Main::handleCloseSignal);
     std::signal(SIGWINCH, Main::handleResizeSignal);
+
+    handleResizeSignal(0);
 
     hideCursor();
     disableScroll();

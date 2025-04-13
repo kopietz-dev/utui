@@ -5,18 +5,22 @@
 namespace UTUI {
 
 class Text : public Element {
- public:
-  void setLine(const std::string& v, int index) {
+public:
+  std::vector<std::string> value;
+
+  void setLine(const std::string &v, int index) {
     value[index] = v;
     refresh();
     const int stringWidth = Utils::getStringWidth(v);
-    if (absoluteSize().x < stringWidth) size.x = stringWidth;
+    if (absoluteSize().x < stringWidth)
+      size.x = stringWidth;
   }
-  void addLine(const std::string& v, int index) {
+  void addLine(const std::string &v) {
     const int stringWidth = Utils::getStringWidth(v);
-    if (absoluteSize().x < stringWidth) size.x = stringWidth;
+    if (absoluteSize().x < stringWidth)
+      size.x = stringWidth;
 
-    value.insert(value.begin() + index, v);
+    value.push_back(v);
     refresh();
   }
   void deleteLine(int index) {
@@ -25,7 +29,7 @@ class Text : public Element {
   }
   std::vector<std::string> getValue() { return value; }
   void clearValue() { value.clear(); }
-  void loadTextFromFile(const std::string& filename) {
+  void loadTextFromFile(const std::string &filename) {
     std::ifstream file(filename);
 
     if (!file) {
@@ -37,23 +41,25 @@ class Text : public Element {
     }
     file.close();
   }
-
- private:
-  std::vector<std::string> value;
   void draw() override {
     size.y = value.size();
     shared.mainBuffer += ANSI::setColor(styles.standard) +
                          ANSI::setCursorPosition(absolutePosition());
 
-    for (const std::string& line : value) {
+    for (const std::string &line : value) {
       shared.mainBuffer +=
           line + ANSI::cursorDown() + ANSI::cursorLeft(line.length());
     }
   }
-  void initFromString(const std::string& v, bool alias) override {
+
+private:
+  void initFromString(const std::string &v, bool alias) override {
     const std::vector<std::string> newOptions = Utils::splitString(v, ',');
-    value.insert(value.end(), newOptions.begin(), newOptions.end());
+
+    for (const std::string &str : newOptions) {
+      addLine(str);
+    }
   }
   using Element::Element;
 };
-}  // namespace UTUI
+} // namespace UTUI

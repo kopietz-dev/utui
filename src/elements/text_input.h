@@ -7,6 +7,7 @@ namespace UTUI {
 class TextInput : public Element {
 public:
   std::string placeholder;
+  EventListener onChange, onSubmit;
   bool coded = false;
 
   void setSize(int newSize) { size.x = newSize; }
@@ -23,9 +24,6 @@ public:
       refresh();
     }
   }
-  void onChange(const std::function<void()> &v) { changeListener.set(v); }
-  void onSubmit(const std::function<void()> &v) { submitListener.set(v); }
-
   void draw() override {
     shared.mainBuffer += ANSI::setCursorPosition(absolutePosition());
 
@@ -52,8 +50,6 @@ public:
 private:
   std::string value;
   int cursorPosition = 0;
-
-  EventListener changeListener, submitListener;
 
   void updateCursorPosition() {
     shared.cursor.setPosition(absolutePosition() +
@@ -88,11 +84,11 @@ private:
         cursorPosition--;
         value.erase(value.begin() + cursorPosition);
 
-        changeListener.trigger();
+        onChange.trigger();
       }
       break;
     case '\n':
-      submitListener.trigger();
+      onSubmit.trigger();
       break;
     default:
       if (value.length() < absoluteSize().x - 1) {
@@ -100,7 +96,7 @@ private:
 
         cursorPosition++;
 
-        changeListener.trigger();
+        onChange.trigger();
       }
       break;
     }
