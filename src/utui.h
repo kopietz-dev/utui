@@ -27,7 +27,7 @@ public:
 
   static const Vector2 &getScreenSize() { return consoleScreen->size; }
   static InputEvent getInputEvent() { return event; }
-  static void displayAll() {
+  static void refresh() {
     for (Window *window : windows) {
       if (!window->disabled)
         window->refresh();

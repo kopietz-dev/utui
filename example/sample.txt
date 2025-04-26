@@ -1,21 +1,6 @@
-Lorem ipsum dolor sit amet, 
-consectetur adipiscing elit. 
-Ut at nunc purus. Vestibulum 
-volutpat tincidunt velit ut 
-facilisis. Suspendisse et 
-imperdiet turpis. Integer sit 
-amet ipsum convallis, laoreet 
-nunc a, volutpat purus. Sed 
-rhoncus leo non tempor 
-condimentum. Pellentesque 
-habitant morbi tristique 
-senectus et netus et malesuada 
-fames ac turpis egestas. 
-Aliquam aliquam urna quis orci 
-placerat pharetra. Duis quis 
-molestie leo. Cras nibh urna, 
-pulvinar eget sagittis vel, 
-bibendum sit amet tortor. 
-Quisque libero nulla, ornare 
-vel venenatis sed, fermentum 
-ornare nisl.
+Lorem ipsum dolor sit amet,
+consectetur adipiscing elit.
+Fusce iaculis sed quam eu
+facilisis. Proin dolor neque,
+varius eu rhoncus id, euismod
+molestie dolor. Nullam. 
