@@ -5,6 +5,7 @@
 #include "elements/button.h"
 #include "elements/click_menu.h"
 #include "elements/menu.h"
+#include "elements/numerical_input.h"
 #include "elements/progress_bar.h"
 #include "elements/scrollable_menu.h"
 #include "elements/scrollable_text.h"
@@ -198,7 +199,8 @@ public:
         variables[type] = params.find("value")->second;
       }
       if (type[0] == '@') {
-        appendFromFile(type.substr(1));
+        appendFromFile(filename.substr(0, filename.find_last_of("/") + 1) +
+                       type.substr(1));
       }
 
       if (type == "#window") {
@@ -216,6 +218,10 @@ public:
         elemPointer = &winPointer->append<ScrollableMenu>();
       if (type == "#text_input")
         elemPointer = &winPointer->append<TextInput>();
+
+      if (type == "#numerical_input")
+        elemPointer = &winPointer->append<NumericalInput>();
+
       if (type == "#text")
         elemPointer = &winPointer->append<Text>();
       if (type == "#click_menu")

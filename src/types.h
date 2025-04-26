@@ -37,6 +37,7 @@ public:
     } else
       return false;
   }
+  bool peek() { return value; }
 
 private:
   bool value = false;
@@ -84,9 +85,18 @@ public:
     color = v;
     updated.set();
   }
-  void setPosition(const Vector2 &v) { position = v; }
-  void show() { visible = true; }
-  void hide() { visible = false; }
+  void setPosition(const Vector2 &v) {
+    position = v;
+    updated.set();
+  }
+  void show() {
+    visible = true;
+    updated.set();
+  }
+  void hide() {
+    if (!updated.peek())
+      visible = false;
+  }
 
 private:
   Vector2 position = {1, 1};

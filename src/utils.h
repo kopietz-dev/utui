@@ -2,8 +2,10 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <limits.h>
 #include <ranges>
 #include <string>
+#include <unistd.h>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -13,6 +15,12 @@
 namespace UTUI {
 class Utils {
 public:
+  static std::string getHomeDir() {
+    const char *home = std::getenv("HOME");
+    if (home)
+      return home;
+    throw std::runtime_error("HOME environment variable not set");
+  }
   static std::string multiplyString(const std::string &str, int times) {
     if (times <= 0)
       return "";
@@ -44,6 +52,13 @@ public:
       lines.push_back(line);
     }
     return lines;
+  }
+  static std::string getExecutableDir() {
+    char result[PATH_MAX];
+    ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
+    std::string fullPath(result, (count > 0) ? count : 0);
+    size_t lastSlash = fullPath.find_last_of("/");
+    return fullPath.substr(0, lastSlash + 1);
   }
   static std::vector<std::string> splitString(const std::string &str,
                                               char delimiter) {

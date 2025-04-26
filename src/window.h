@@ -46,7 +46,7 @@ public:
     draw();
 
     for (Element *element : elements) {
-      element->refresh();
+      element->draw();
     }
   }
   void remove() {

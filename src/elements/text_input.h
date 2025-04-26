@@ -52,6 +52,9 @@ private:
   int cursorPosition = 0;
 
   void updateCursorPosition() {
+    if (!active)
+      return;
+
     shared.cursor.setPosition(absolutePosition() +
                               Vector2({cursorPosition, 0}));
     shared.cursor.setColor(styles.selected.fgColor);

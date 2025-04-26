@@ -5,7 +5,7 @@
 namespace UTUI {
 
 class NumericalInput : public Element {
- public:
+public:
   Color cursorColor, placeholderColor;
   std::string placeholder;
   bool coded = false, floatingPoint = true, negativeNumbers = false;
@@ -16,7 +16,7 @@ class NumericalInput : public Element {
     refresh();
   }
   std::string getValue() { return value; }
-  void setPlaceholder(const std::string& v) {
+  void setPlaceholder(const std::string &v) {
     placeholder = v;
 
     if (value.empty()) {
@@ -24,24 +24,31 @@ class NumericalInput : public Element {
     }
   }
 
-  void onChange(const std::function<void()>& v) { changeListener.set(v); }
-  void onSubmit(const std::function<void()>& v) { submitListener.set(v); }
+  EventListener onChange, onSubmit;
 
- private:
+private:
   std::string value;
   int cursorPosition = 0;
 
-  EventListener changeListener, submitListener;
   void updateCursorPosition() {
+    if (!active)
+      return;
     shared.cursor.setPosition(absolutePosition() +
                               Vector2({cursorPosition, 0}));
     shared.cursor.setColor(cursorColor);
   }
-  void activate(const InputEvent& e) override { shared.cursor.show(); }
-  void deactivate(const InputEvent& e) override { shared.cursor.hide(); }
+  void activate(const InputEvent &e) override {
+    shared.cursor.show();
+    draw();
+  }
+  void deactivate(const InputEvent &e) override {
+    shared.cursor.hide();
+    draw();
+  }
 
-  void handleLeftClick(const InputEvent& e) override {
-    if (e.value != 'M') return;
+  void handleLeftClick(const InputEvent &e) override {
+    if (e.value != 'M')
+      return;
 
     cursorPosition = (e.position.x - absolutePosition().x);
 
@@ -55,77 +62,85 @@ class NumericalInput : public Element {
     value.insert(value.begin() + cursorPosition, 1, v);
     cursorPosition++;
 
-    changeListener.trigger();
+    onChange.trigger();
   }
-  void handleAlfanumKey(const InputEvent& e) override {
-    const int spaceLeft = size.x - value.size() - 1;
+  void handleAlfanumKey(const InputEvent &e) override {
+    const int spaceLeft = absoluteSize().x - value.size() - 1;
     switch ((char)e.value) {
-      case 127:
-        if (cursorPosition > 0) {
-          cursorPosition--;
-          value.erase(value.begin() + cursorPosition);
-          changeListener.trigger();
-        }
-        break;
-      case '\n':
-        submitListener.trigger();
-        break;
-      case '-':
-        if (value.empty()) {
-          pushCharacter(e.value);
-        }
-        break;
-      case '.':
-        if (spaceLeft > 0 && floatingPoint &&
-            value.find('.') == std::string::npos) {
-          pushCharacter(e.value);
-        }
-        break;
-      default:
-        if (spaceLeft > 0 && e.value >= 48 && e.value <= 57) {
-          pushCharacter(e.value);
-        }
-        break;
+    case 127:
+      if (cursorPosition > 0) {
+        cursorPosition--;
+        value.erase(value.begin() + cursorPosition);
+
+        onChange.trigger();
+      }
+      break;
+    case '\n':
+      onSubmit.trigger();
+      break;
+    case '-':
+      if (value.empty()) {
+        pushCharacter(e.value);
+      }
+      break;
+    case '.':
+      if (spaceLeft > 0 && floatingPoint &&
+          value.find('.') == std::string::npos) {
+        pushCharacter(e.value);
+      }
+      break;
+    default:
+      if (spaceLeft > 0 && e.value >= 48 && e.value <= 57) {
+        pushCharacter(e.value);
+      }
+      break;
     }
 
     draw();
   }
-  void handleSpecialKey(const InputEvent& e) override {
+  void handleSpecialKey(const InputEvent &e) override {
     switch ((char)e.value) {
-      case 'C':
-        if (cursorPosition < value.length()) {
-          cursorPosition++;
-        }
-        break;
-      case 'D':
-        if (cursorPosition > 0) {
-          cursorPosition--;
-        }
-        break;
+    case 'C':
+      if (cursorPosition < value.length()) {
+        cursorPosition++;
+      }
+      break;
+    case 'D':
+      if (cursorPosition > 0) {
+        cursorPosition--;
+      }
+      break;
     }
 
     updateCursorPosition();
   }
 
   void draw() override {
-    clear();
-    if (value.empty()) {
-      shared.mainBuffer += ANSI::setFgColor(placeholderColor) +
-                           ANSI::setBgColor(styles.standard.bgColor) +
-                           ANSI::setCursorPosition(absolutePosition()) +
-                           placeholder;
+    shared.mainBuffer += ANSI::setCursorPosition(absolutePosition());
+
+    if (active) {
+      shared.mainBuffer += ANSI::setBgColor(styles.selected.bgColor);
     } else {
-      shared.mainBuffer += ANSI::setCursorPosition(absolutePosition()) +
-                           ANSI::setColor(styles.selected) +
-                           (coded ? std::string(value.length(), '*') : value) +
-                           ANSI::cursorDown() +
-                           ANSI::cursorLeft(value.length());
+      shared.mainBuffer += ANSI::setBgColor(styles.standard.bgColor);
+    }
+
+    if (value.empty()) {
+      shared.mainBuffer +=
+          ANSI::setFgColor(styles.standard.fgColor) + placeholder +
+          Utils::multiplyString(" ", absoluteSize().x - placeholder.size());
+    } else {
+      shared.mainBuffer +=
+          ANSI::setFgColor(styles.selected.fgColor) +
+          (coded ? std::string(value.length(), '*') : value) +
+          Utils::multiplyString(" ", absoluteSize().x - value.length());
     }
 
     updateCursorPosition();
   }
-
+  void initFromString(const std::string &v, bool alias) override {
+    placeholder = v;
+  }
   using Element::Element;
 };
 
-}  // namespace UTUI
+} // namespace UTUI

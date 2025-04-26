@@ -16,6 +16,9 @@ public:
   void popOption() { options.pop_back(); }
 
   void setSelected(int index) {
+    if (index >= options.size())
+      return;
+
     int prevSelected = selected;
     selected = index;
 
@@ -75,7 +78,8 @@ private:
   }
   void handleMouseMove(const InputEvent &e) override {
     const Vector2 relativePosition = e.position - absolutePosition();
-    if (relativePosition.x < absoluteSize().x - 2) {
+    if (relativePosition.x < absoluteSize().x - 2 &&
+        relativePosition.y + scroll < options.size()) {
       int index = relativePosition.y + scroll;
 
       int prevHovered = hovered;
@@ -97,7 +101,8 @@ private:
     isScrolled = (scrollPosition + absolutePosition() == e.position) &&
                  e.value == 'M' && options.size() > absSize.y;
     const Vector2 relativePosition = e.position - absolutePosition();
-    if (relativePosition.x < absSize.x - 2) {
+    if (relativePosition.x < absSize.x - 2 &&
+        relativePosition.y + scroll < options.size()) {
       setSelected(relativePosition.y + scroll);
     }
   }

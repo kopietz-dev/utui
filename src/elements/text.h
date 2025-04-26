@@ -9,23 +9,28 @@ public:
   std::vector<std::string> value;
 
   void setLine(const std::string &v, int index) {
+    clear();
     value[index] = v;
-    refresh();
-    const int stringWidth = Utils::getStringWidth(v);
-    if (absoluteSize().x < stringWidth)
-      size.x = stringWidth;
-  }
-  void addLine(const std::string &v) {
-    const int stringWidth = Utils::getStringWidth(v);
+    const int stringWidth = v.size();
     if (absoluteSize().x < stringWidth)
       size.x = stringWidth;
 
+    draw();
+  }
+  void addLine(const std::string &v) {
+    clear();
     value.push_back(v);
-    refresh();
+    const int stringWidth = v.size();
+
+    if (absoluteSize().x < stringWidth)
+      size.x = stringWidth;
+
+    draw();
   }
   void deleteLine(int index) {
+    clear();
     value.erase(value.begin() + index);
-    refresh();
+    draw();
   }
   std::vector<std::string> getValue() { return value; }
   void clearValue() { value.clear(); }
@@ -43,6 +48,7 @@ public:
   }
   void draw() override {
     size.y = value.size();
+
     shared.mainBuffer += ANSI::setColor(styles.standard) +
                          ANSI::setCursorPosition(absolutePosition());
 
